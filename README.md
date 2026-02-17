@@ -60,14 +60,19 @@ Schema SQL is in:
 - `apps/server/sql/001_init.sql`
 
 Tables:
-- `rooms`
-- `players`
-- `match_snapshots`
+- `shorewood_rooms`
+- `shorewood_players`
+- `shorewood_match_snapshots`
 
 The server stores:
 - room expiry metadata (24h)
 - player profile/heartbeat metadata
 - match snapshots for crash recovery
+
+Important:
+- Shorewood does not require Supabase Auth or user profiles.
+- Do not add foreign keys from player records to `auth.users` or profile tables.
+- The server validates schema shape on startup and exits with a clear error if an auth-bound schema is detected.
 
 ## Testing
 
@@ -134,6 +139,13 @@ Set env:
 
 - Create DB and run `apps/server/sql/001_init.sql`
 - Use direct Postgres connection string for `DATABASE_URL`
+- If this database already has a different game schema, keep it as-is; Shorewood uses dedicated `shorewood_*` tables to avoid collisions.
+
+Connection notes:
+- If `db.<project-ref>.supabase.co` fails to resolve on your network, use Supabase pooler instead.
+- Example pooler format:
+  - `postgresql://postgres.<project-ref>:<password>@aws-1-us-east-1.pooler.supabase.com:6543/postgres`
+- For Supabase pooler, set `DATABASE_SSL_REJECT_UNAUTHORIZED=false` if your runtime reports certificate chain errors.
 
 ## Squarespace Embed
 

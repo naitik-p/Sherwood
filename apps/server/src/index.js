@@ -30,20 +30,41 @@ import { RoomStore } from "./db.js";
 const PORT = Number(process.env.PORT ?? 8080);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "*";
 const ROOM_TTL_HOURS = Number(process.env.ROOM_TTL_HOURS ?? 24);
+const DATABASE_SSL_REJECT_UNAUTHORIZED =
+  process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === undefined
+    ? null
+    : process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === "true";
 
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN === "*" ? true : CLIENT_ORIGIN }));
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, now: new Date().toISOString() });
+  res.json({
+    ok: true,
+    now: new Date().toISOString(),
+    persistence: process.env.DATABASE_URL ? "postgres" : "memory"
+  });
 });
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
-const store = new RoomStore({ databaseUrl: process.env.DATABASE_URL, roomTtlHours: ROOM_TTL_HOURS });
-await store.init();
+const store = new RoomStore({
+  databaseUrl: process.env.DATABASE_URL,
+  roomTtlHours: ROOM_TTL_HOURS,
+  databaseSslRejectUnauthorized: DATABASE_SSL_REJECT_UNAUTHORIZED
+});
+
+try {
+  await store.init();
+} catch (error) {
+  console.error("Failed to initialize Shorewood persistence.");
+  console.error("This server expects its own tables and does not use Supabase auth profile foreign keys.");
+  console.error('Run "apps/server/sql/001_init.sql" against your database and verify DATABASE_URL.');
+  console.error(error);
+  process.exit(1);
+}
 
 const rooms = new Map();
 
