@@ -1,0 +1,17 @@
+{
+  "rewrites": [
+    { "source": "/embed", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://*.squarespace.com https://*.squarespace-cdn.com https://YOUR-SQUARESPACE-DOMAIN"
+        }
+      ]
+    }
+  ]
+}

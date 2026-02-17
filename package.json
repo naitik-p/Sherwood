@@ -1,0 +1,21 @@
+{
+  "name": "shorewood",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "apps/server",
+    "apps/client"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"npm --workspace @shorewood/server run dev\" \"npm --workspace @shorewood/client run dev\"",
+    "build": "npm --workspace @shorewood/core run build && npm --workspace @shorewood/server run build && npm --workspace @shorewood/client run build",
+    "test": "npm --workspace @shorewood/core run test",
+    "lint": "npm --workspace @shorewood/core run lint && npm --workspace @shorewood/server run lint && npm --workspace @shorewood/client run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "playwright": "^1.58.2"
+  }
+}
