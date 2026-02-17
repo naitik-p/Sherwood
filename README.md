@@ -47,9 +47,15 @@ cp .env.example .env
 
 Used by server:
 - `PORT`
-- `CLIENT_ORIGIN`
+- `CLIENT_ORIGIN` (required in deployment; comma-separated allowlist supported)
 - `DATABASE_URL` (optional; memory fallback if omitted)
 - `ROOM_TTL_HOURS` (defaults to `24`)
+- `SNAPSHOT_LIMIT` (defaults to `50`)
+- `MAX_WS_MESSAGE_BYTES` (defaults to `16384`)
+- `MESSAGE_RATE_LIMIT_WINDOW_MS` (defaults to `5000`)
+- `MESSAGE_RATE_LIMIT_MAX` (defaults to `80`)
+- `CONNECTION_RATE_WINDOW_MS` (defaults to `60000`)
+- `CONNECTION_RATE_MAX` (defaults to `80`)
 
 Used by client:
 - `VITE_WS_URL` (for deployed frontend)
@@ -73,6 +79,7 @@ Important:
 - Shorewood does not require Supabase Auth or user profiles.
 - Do not add foreign keys from player records to `auth.users` or profile tables.
 - The server validates schema shape on startup and exits with a clear error if an auth-bound schema is detected.
+- Session tokens and reconnect secrets are private credentials; they are never exposed in shared room payloads.
 
 ## Testing
 
@@ -134,6 +141,7 @@ Set env:
 - `CLIENT_ORIGIN=https://YOUR-VERCEL-DOMAIN`
 - `DATABASE_URL`
 - `ROOM_TTL_HOURS=24`
+- `SNAPSHOT_LIMIT=50`
 
 ### Supabase
 

@@ -89,11 +89,41 @@ const appEl = document.getElementById("app");
 const roomParam = new URLSearchParams(window.location.search).get("room");
 const embedMode = window.location.pathname.startsWith("/embed");
 
+function loadStoredSession(roomId) {
+  if (!roomId) {
+    return null;
+  }
+
+  const raw = localStorage.getItem(`shorewood_session_${roomId}`);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && typeof parsed.sessionToken === "string") {
+      return parsed;
+    }
+  } catch {
+    // Backward compatibility with legacy string-only session storage.
+  }
+
+  if (typeof raw === "string" && raw.startsWith("sess_")) {
+    return { sessionToken: raw, reconnectSecret: null, playerId: null };
+  }
+
+  return null;
+}
+
+const storedSession = loadStoredSession(roomParam);
+
 const state = {
   ws: null,
   connected: false,
   roomId: roomParam,
-  sessionToken: roomParam ? localStorage.getItem(`shorewood_session_${roomParam}`) : null,
+  sessionToken: storedSession?.sessionToken ?? null,
+  reconnectSecret: storedSession?.reconnectSecret ?? null,
+  playerId: storedSession?.playerId ?? null,
   role: null,
   roomState: null,
   gameState: null,
@@ -128,8 +158,15 @@ function saveProfile() {
 }
 
 function saveSession() {
-  if (state.roomId && state.sessionToken) {
-    localStorage.setItem(`shorewood_session_${state.roomId}`, state.sessionToken);
+  if (state.roomId && state.sessionToken && state.reconnectSecret) {
+    localStorage.setItem(
+      `shorewood_session_${state.roomId}`,
+      JSON.stringify({
+        sessionToken: state.sessionToken,
+        reconnectSecret: state.reconnectSecret,
+        playerId: state.playerId || null
+      })
+    );
   }
 }
 
@@ -166,8 +203,12 @@ function connectSocket() {
   ws.addEventListener("open", () => {
     state.connected = true;
 
-    if (state.roomId && state.sessionToken) {
-      send("reconnect", { roomId: state.roomId, sessionToken: state.sessionToken });
+    if (state.roomId && state.sessionToken && state.reconnectSecret) {
+      send("reconnect", {
+        roomId: state.roomId,
+        sessionToken: state.sessionToken,
+        reconnectSecret: state.reconnectSecret
+      });
     }
 
     render();
@@ -188,6 +229,8 @@ function handleServerMessage(type, payload) {
   if (type === "playerStatus") {
     if (payload.sessionToken) {
       state.sessionToken = payload.sessionToken;
+      state.reconnectSecret = payload.reconnectSecret || state.reconnectSecret;
+      state.playerId = payload.playerId || state.playerId;
       state.role = payload.role || state.role;
       if (payload.roomId) {
         state.roomId = payload.roomId;
@@ -210,6 +253,9 @@ function handleServerMessage(type, payload) {
   if (type === "roomState") {
     state.roomState = payload;
     state.roomId = payload.roomId;
+    if (payload.selfPlayerId) {
+      state.playerId = payload.selfPlayerId;
+    }
     saveSession();
     render();
     return;
@@ -289,6 +335,7 @@ function requestJoinRoom(roomId) {
   send("requestJoin", {
     roomId,
     sessionToken: state.sessionToken,
+    reconnectSecret: state.reconnectSecret,
     name: state.profile.name.trim(),
     avatarId: state.profile.avatarId
   });
@@ -326,10 +373,10 @@ function toResourceText(bag) {
 }
 
 function getMeInGame() {
-  if (!state.gameState || !state.sessionToken) {
+  if (!state.gameState || !state.playerId) {
     return null;
   }
-  return state.gameState.players.find((player) => player.id === state.sessionToken) ?? null;
+  return state.gameState.players.find((player) => player.id === state.playerId) ?? null;
 }
 
 function getPlayerStyle(playerId) {
@@ -426,8 +473,8 @@ function renderLanding() {
 
 function renderLobby() {
   const rs = state.roomState;
-  const me = rs.players.find((player) => player.sessionToken === state.sessionToken);
-  const canStart = rs.canStart && state.sessionToken === rs.hostSessionToken;
+  const me = rs.players.find((player) => player.playerId === rs.selfPlayerId) ?? null;
+  const canStart = rs.canStart && state.role === "host";
 
   appEl.className = embedMode ? "embed" : "";
   appEl.innerHTML = `
@@ -451,7 +498,7 @@ function renderLobby() {
                   <div class="avatar-badge">${avatarIcon(player.avatarId)}</div>
                   <div>
                     <strong>${escapeHtml(player.name)}</strong>
-                    ${player.sessionToken === rs.hostSessionToken ? '<span class="status-pill">Host</span>' : ""}
+                    ${player.isHost ? '<span class="status-pill">Host</span>' : ""}
                   </div>
                   <div>${player.ready ? "Ready" : "Not Ready"}</div>
                 </div>
@@ -463,7 +510,7 @@ function renderLobby() {
             <button id="toggle-ready">${me?.ready ? "Set Not Ready" : "Ready Up"}</button>
             ${canStart ? '<button id="start-match">Start Match</button>' : ""}
           </div>
-          ${state.sessionToken === rs.hostSessionToken ? renderPendingRequests(rs.pendingRequests) : ""}
+          ${state.role === "host" ? renderPendingRequests(rs.pendingRequests) : ""}
         </div>
         ${renderAvatarPicker()}
       </div>
@@ -485,15 +532,16 @@ function renderLobby() {
   });
 
   for (const request of rs.pendingRequests || []) {
-    const admitBtn = document.querySelector(`[data-admit='${request.sessionToken}']`);
-    const denyBtn = document.querySelector(`[data-deny='${request.sessionToken}']`);
+    const safePlayerId = CSS.escape(request.playerId);
+    const admitBtn = document.querySelector(`[data-admit='${safePlayerId}']`);
+    const denyBtn = document.querySelector(`[data-deny='${safePlayerId}']`);
 
     admitBtn?.addEventListener("click", () => {
-      send("hostAdmit", { roomId: rs.roomId, sessionToken: request.sessionToken });
+      send("hostAdmit", { roomId: rs.roomId, playerId: request.playerId });
     });
 
     denyBtn?.addEventListener("click", () => {
-      send("hostDeny", { roomId: rs.roomId, sessionToken: request.sessionToken });
+      send("hostDeny", { roomId: rs.roomId, playerId: request.playerId });
     });
   }
 }
@@ -513,8 +561,8 @@ function renderPendingRequests(requests) {
           <div class="avatar-badge">${avatarIcon(req.avatarId)}</div>
           <div>${escapeHtml(req.name)}</div>
           <div class="inline-row">
-            <button data-admit="${req.sessionToken}">Admit</button>
-            <button data-deny="${req.sessionToken}">Deny</button>
+            <button data-admit="${escapeAttr(req.playerId)}">Admit</button>
+            <button data-deny="${escapeAttr(req.playerId)}">Deny</button>
           </div>
         </div>
       `
@@ -723,7 +771,7 @@ function computeOptions(gameState) {
   const options = [];
   const me = getMeInGame();
   const activePlayerId = gameState.turn?.activePlayerId;
-  const iAmActive = activePlayerId === state.sessionToken;
+  const iAmActive = activePlayerId === state.playerId;
 
   if (gameState.phase === "vote") {
     options.push({
@@ -738,7 +786,7 @@ function computeOptions(gameState) {
   }
 
   if (gameState.phase === "setup") {
-    if (gameState.setup?.currentStep?.playerId === state.sessionToken) {
+    if (gameState.setup?.currentStep?.playerId === state.playerId) {
       const type = gameState.setup.currentStep.type === "cottage" ? "Cottage" : "Trail";
       options.push({ label: `Place ${type} (click highlighted spot)`, action: () => {} });
     }
@@ -767,7 +815,7 @@ function computeOptions(gameState) {
     });
   }
 
-  if (gameState.pendingHostTieBreak && gameState.hostPlayerId === state.sessionToken) {
+  if (gameState.pendingHostTieBreak && gameState.hostPlayerId === state.playerId) {
     for (const candidate of gameState.pendingHostTieBreak.candidates) {
       const player = gameState.players.find((entry) => entry.id === candidate);
       options.push({
@@ -864,7 +912,7 @@ function renderPlayerList(gameState) {
                 <div><strong>${escapeHtml(player.name)}</strong> ${player.id === activeId ? '<span class="status-pill">Turn</span>' : ""}</div>
                 <div class="muted">${player.points} pts</div>
               </div>
-              <div class="muted">${player.id === state.sessionToken ? toResourceText(player.resources || {}) || "No cards" : `${player.resourceCount} cards`}</div>
+              <div class="muted">${player.id === state.playerId ? toResourceText(player.resources || {}) || "No cards" : `${player.resourceCount} cards`}</div>
             </div>
           `;
         })
@@ -879,7 +927,7 @@ function renderTradePanel(gameState) {
     return "";
   }
 
-  const otherPlayers = gameState.players.filter((player) => player.id !== state.sessionToken);
+  const otherPlayers = gameState.players.filter((player) => player.id !== state.playerId);
   const pending = (gameState.pendingTrades || []).filter((trade) => trade.status === "pending");
 
   return `
@@ -890,7 +938,10 @@ function renderTradePanel(gameState) {
           <select id="trade-to-player">
             <option value="">Open offer</option>
             ${otherPlayers
-              .map((player) => `<option value="${player.id}" ${state.tradeDraft.toPlayerId === player.id ? "selected" : ""}>${escapeHtml(player.name)}</option>`)
+              .map(
+                (player) =>
+                  `<option value="${escapeAttr(player.id)}" ${state.tradeDraft.toPlayerId === player.id ? "selected" : ""}>${escapeHtml(player.name)}</option>`
+              )
               .join("")}
           </select>
         </label>
@@ -919,17 +970,17 @@ function renderTradePanel(gameState) {
           .map((trade) => {
             const from = gameState.players.find((p) => p.id === trade.fromPlayerId);
             const to = trade.toPlayerId ? gameState.players.find((p) => p.id === trade.toPlayerId) : null;
-            const targetedAtMe = trade.toPlayerId === state.sessionToken;
-            const openAndNotMine = !trade.toPlayerId && trade.fromPlayerId !== state.sessionToken;
+            const targetedAtMe = trade.toPlayerId === state.playerId;
+            const openAndNotMine = !trade.toPlayerId && trade.fromPlayerId !== state.playerId;
             const canAccept = targetedAtMe || openAndNotMine;
-            const canDecline = canAccept || trade.fromPlayerId === state.sessionToken;
+            const canDecline = canAccept || trade.fromPlayerId === state.playerId;
 
             return `
               <div class="trade-offer">
                 <div><strong>${escapeHtml(from?.name || "Unknown")}</strong> offers ${toResourceText(trade.give)} for ${toResourceText(trade.receive)} ${to ? `to ${escapeHtml(to.name)}` : "(open)"}</div>
                 <div class="inline-row" style="margin-top:6px;">
-                  ${canAccept ? `<button data-accept-trade="${trade.id}">Accept</button>` : ""}
-                  ${canDecline ? `<button data-decline-trade="${trade.id}">Decline</button>` : ""}
+                  ${canAccept ? `<button data-accept-trade="${escapeAttr(trade.id)}">Accept</button>` : ""}
+                  ${canDecline ? `<button data-decline-trade="${escapeAttr(trade.id)}">Decline</button>` : ""}
                 </div>
               </div>
             `;
@@ -1127,7 +1178,7 @@ function bindBoardInteractions(gs) {
     return;
   }
 
-  const canAct = gs.turn?.activePlayerId === state.sessionToken || gs.phase === "setup";
+  const canAct = gs.turn?.activePlayerId === state.playerId || gs.phase === "setup";
 
   if (canAct) {
     document.querySelectorAll("[data-edge-id]").forEach((element) => {
@@ -1330,6 +1381,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replaceAll("`", "&#096;");
 }
 
 function render() {

@@ -13,8 +13,14 @@ const EXPECTED_COLUMNS = Object.freeze({
 });
 
 export class RoomStore {
-  constructor({ databaseUrl = null, roomTtlHours = 24, databaseSslRejectUnauthorized = null } = {}) {
+  constructor({
+    databaseUrl = null,
+    roomTtlHours = 24,
+    snapshotLimit = 50,
+    databaseSslRejectUnauthorized = null
+  } = {}) {
     this.roomTtlHours = roomTtlHours;
+    this.snapshotLimit = Math.max(1, Number(snapshotLimit) || 50);
     this.usePg = Boolean(databaseUrl);
     if (this.usePg) {
       const poolConfig = { connectionString: databaseUrl };
@@ -219,12 +225,26 @@ export class RoomStore {
   async saveSnapshot({ roomId, stateJson }) {
     if (this.usePg) {
       await this.pool.query(`insert into ${TABLES.snapshots} (room_id, state_json) values ($1, $2)`, [roomId, stateJson]);
+      await this.pool.query(
+        `
+          delete from ${TABLES.snapshots}
+          where room_id = $1
+            and id not in (
+              select id
+              from ${TABLES.snapshots}
+              where room_id = $1
+              order by created_at desc, id desc
+              limit $2
+            )
+        `,
+        [roomId, this.snapshotLimit]
+      );
       return;
     }
 
     const current = this.memory.snapshots.get(roomId) ?? [];
     current.push({ created_at: new Date().toISOString(), state_json: stateJson });
-    this.memory.snapshots.set(roomId, current.slice(-10));
+    this.memory.snapshots.set(roomId, current.slice(-this.snapshotLimit));
   }
 
   async latestSnapshot(roomId) {

@@ -39,3 +39,18 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
   - `npm test`: pass (5/5).
   - `npm run build`: pass.
   - Playwright/game smoke flow executed to in-game board state and screenshot-inspected for icon rendering.
+- Security hardening pass (priority order) completed:
+  - Replaced token-leaking room identity model with public `playerId` + private session credentials.
+  - `roomState` no longer exposes session tokens; host admit/deny now targets `playerId`.
+  - Reconnect now requires both `sessionToken` and `reconnectSecret` (proof-of-possession), blocking token-only hijack.
+  - Added server-side input validation/normalization for room id, session credentials, player ids, names, and avatar ids.
+  - Added WebSocket abuse controls: origin allowlist check, message size cap, per-socket message rate limits, and per-IP connection rate limits.
+  - Added snapshot retention cap (`SNAPSHOT_LIMIT`) in persistence layer to prevent unbounded growth.
+  - Added attribute-safe escaping on client for dynamic HTML attribute values and moved lobby identity checks to public `playerId`.
+- Validation after hardening:
+  - `npm test`: pass (5/5).
+  - `npm run build`: pass.
+  - `npm run lint`: pass.
+  - Browser smoke flow (create room, admit, ready, start match): pass.
+  - Credential leak check: `roomState` no longer contains session tokens.
+  - Reconnect abuse test: reconnect without secret is rejected.
