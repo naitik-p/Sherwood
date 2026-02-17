@@ -31,3 +31,11 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
 - Regression checks run:
   - `npm test` (core engine): 5/5 passing.
   - `npm run build` (workspace): successful.
+- Added terrain resource emblems on board hexes for visual clarity and theme polish:
+  - New per-terrain SVG icon system in `apps/client/src/main.js` with both subtle watermark layer and badge icon layer.
+  - Hex labels remain visible with stronger text treatment in `apps/client/src/styles.css`.
+  - Preserved token readability while adding iconography for Whisperwood, Clay Pits, Shepherd's Meadow, Golden Fields, Ironridge, and Wild Heath.
+- Validation run after icon pass:
+  - `npm test`: pass (5/5).
+  - `npm run build`: pass.
+  - Playwright/game smoke flow executed to in-game board state and screenshot-inspected for icon rendering.

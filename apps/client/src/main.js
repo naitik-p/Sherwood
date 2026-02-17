@@ -24,7 +24,12 @@ const AVATARS = [
   { id: "badge_15", icon: "🪨", label: "Granite Crest" }
 ];
 
-const PLAYER_COLORS = ["#5f7e63", "#c27f6a", "#6f8fad", "#8a6e9a"];
+const PLAYER_STYLES = [
+  { trail: "#0d4f73", structure: "#2f94ba" },
+  { trail: "#8c3f2d", structure: "#cc6e57" },
+  { trail: "#365e2d", structure: "#6ea95f" },
+  { trail: "#69417b", structure: "#a271bd" }
+];
 
 const TERRAIN_COLORS = {
   whisperwood: "#8fb597",
@@ -33,6 +38,51 @@ const TERRAIN_COLORS = {
   golden_fields: "#d9c8a0",
   ironridge: "#9daab8",
   wild_heath: "#b9ae9d"
+};
+
+const TERRAIN_EMBLEMS = {
+  whisperwood: {
+    main: "#5f8d68",
+    accent: "#7eaa87",
+    line: "#3f5f46",
+    badgeBg: "#ecf5e9",
+    badgeStroke: "#6d8f72"
+  },
+  clay_pits: {
+    main: "#bb6f55",
+    accent: "#d08c73",
+    line: "#7f4636",
+    badgeBg: "#f7ebe5",
+    badgeStroke: "#ad6f59"
+  },
+  shepherds_meadow: {
+    main: "#f0f4f7",
+    accent: "#d6e4ea",
+    line: "#88a1ad",
+    badgeBg: "#edf6f3",
+    badgeStroke: "#8ba89d"
+  },
+  golden_fields: {
+    main: "#c49f65",
+    accent: "#e0c190",
+    line: "#8d6d3f",
+    badgeBg: "#f8f1e4",
+    badgeStroke: "#b19263"
+  },
+  ironridge: {
+    main: "#708496",
+    accent: "#9caab7",
+    line: "#4d5f6f",
+    badgeBg: "#edf1f5",
+    badgeStroke: "#8393a2"
+  },
+  wild_heath: {
+    main: "#7f8f7c",
+    accent: "#a8b6a5",
+    line: "#5a6657",
+    badgeBg: "#edf0e8",
+    badgeStroke: "#8b9687"
+  }
 };
 
 const appEl = document.getElementById("app");
@@ -282,10 +332,10 @@ function getMeInGame() {
   return state.gameState.players.find((player) => player.id === state.sessionToken) ?? null;
 }
 
-function getPlayerColor(playerId) {
+function getPlayerStyle(playerId) {
   const order = state.gameState?.playerOrder ?? [];
   const idx = order.indexOf(playerId);
-  return PLAYER_COLORS[idx >= 0 ? idx % PLAYER_COLORS.length : 0];
+  return PLAYER_STYLES[idx >= 0 ? idx % PLAYER_STYLES.length : 0];
 }
 
 function triggerOption(index) {
@@ -494,6 +544,76 @@ function hexPoints(hex, size) {
   return points.join(" ");
 }
 
+function renderTerrainGlyph(terrainId, emblem) {
+  switch (terrainId) {
+    case "whisperwood":
+      return `
+        <rect x="-2.2" y="-0.2" width="4.4" height="9" rx="1" fill="${emblem.line}" />
+        <circle cx="0" cy="-5.8" r="5.2" fill="${emblem.main}" />
+        <circle cx="-4.6" cy="-4.2" r="3.4" fill="${emblem.accent}" />
+        <circle cx="4.4" cy="-4.1" r="3.1" fill="${emblem.accent}" />
+      `;
+    case "clay_pits":
+      return `
+        <rect x="-8.5" y="-7.5" width="7.8" height="5.1" rx="1" fill="${emblem.main}" />
+        <rect x="0.7" y="-7.5" width="7.8" height="5.1" rx="1" fill="${emblem.main}" />
+        <rect x="-3.9" y="-1.7" width="7.8" height="5.1" rx="1" fill="${emblem.accent}" />
+        <rect x="-8.5" y="4.1" width="7.8" height="5.1" rx="1" fill="${emblem.accent}" />
+        <rect x="0.7" y="4.1" width="7.8" height="5.1" rx="1" fill="${emblem.accent}" />
+      `;
+    case "shepherds_meadow":
+      return `
+        <circle cx="-4.8" cy="-1.2" r="4.2" fill="${emblem.main}" />
+        <circle cx="0" cy="-4.5" r="5.2" fill="${emblem.main}" />
+        <circle cx="5" cy="-1.1" r="4.1" fill="${emblem.main}" />
+        <rect x="-8.8" y="-0.8" width="17.6" height="8.5" rx="4.2" fill="${emblem.accent}" />
+      `;
+    case "golden_fields":
+      return `
+        <path d="M0 8 L0 -8 M0 -8 L-3.4 -4.8 M0 -4.7 L3.4 -1.8 M0 -1.5 L-3.3 1.4 M0 1.6 L3.3 4.4" fill="none" stroke="${emblem.line}" stroke-width="1.5" stroke-linecap="round" />
+        <path d="M-5.4 8 L-5.4 -4.8 M-5.4 -4.8 L-8.1 -2.4 M-5.4 -1.8 L-2.7 0.5" fill="none" stroke="${emblem.main}" stroke-width="1.3" stroke-linecap="round" />
+        <path d="M5.4 8 L5.4 -5.1 M5.4 -5.1 L8.1 -2.6 M5.4 -2.2 L2.8 0.4" fill="none" stroke="${emblem.main}" stroke-width="1.3" stroke-linecap="round" />
+      `;
+    case "ironridge":
+      return `
+        <polygon points="-8,4 -4,-4 4,-4 8,4 4,8 -4,8" fill="${emblem.main}" />
+        <polygon points="-3.2,2 0,-2.7 3.2,2 0,5.5" fill="${emblem.accent}" />
+        <path d="M-7.7 4.2 H7.7" stroke="${emblem.line}" stroke-width="1.2" stroke-linecap="round" />
+      `;
+    case "wild_heath":
+      return `
+        <path d="M0 8 C1 3 2 -1 6 -5 C2 -4 -2 -2 -4 1 C-5 2 -6 4 -6 7" fill="${emblem.accent}" stroke="${emblem.line}" stroke-width="1.2" />
+        <circle cx="5.7" cy="-5.5" r="1.7" fill="${emblem.main}" />
+      `;
+    default:
+      return "";
+  }
+}
+
+function renderTerrainEmblem(hex) {
+  const emblem = TERRAIN_EMBLEMS[hex.terrainId];
+  if (!emblem) {
+    return "";
+  }
+
+  return `
+    <g class="hex-emblem" transform="translate(${hex.x} ${hex.y})">
+      <g class="hex-emblem-watermark">
+        <circle cx="0" cy="3" r="20" fill="${emblem.badgeBg}" />
+        <g transform="translate(0 3) scale(1.35)">
+          ${renderTerrainGlyph(hex.terrainId, emblem)}
+        </g>
+      </g>
+      <g class="hex-emblem-badge" transform="translate(0 31)">
+        <circle cx="0" cy="0" r="12.5" fill="${emblem.badgeBg}" stroke="${emblem.badgeStroke}" stroke-width="1.1" />
+        <g transform="scale(0.78)">
+          ${renderTerrainGlyph(hex.terrainId, emblem)}
+        </g>
+      </g>
+    </g>
+  `;
+}
+
 function getStructureAt(gameState, intersectionId) {
   return gameState.structures.intersections[intersectionId] ?? null;
 }
@@ -534,6 +654,7 @@ function renderBoard(gameState) {
                   stroke-width="1.6"
                   ${charterPlayable && hex.resource ? `data-charter-hex='${hex.id}' style='cursor:pointer;'` : ""}
                 />
+                ${renderTerrainEmblem(hex)}
                 <text x="${hex.x}" y="${hex.y - 16}" class="hex-label">${hex.terrainName}</text>
                 ${hex.token ? `<circle class='token' cx='${hex.x}' cy='${hex.y + 7}' r='18' />` : ""}
                 ${hex.token ? `<text class='token-text' x='${hex.x}' y='${hex.y + 13}'>${hex.token}</text>` : ""}
@@ -552,7 +673,7 @@ function renderBoard(gameState) {
             const b = board.intersections.find((node) => node.id === edge.b);
             const owner = gameState.structures.edges[edge.id];
             const isHighlighted = highlightTrails.has(edge.id);
-            const color = owner ? getPlayerColor(owner) : "#56655c";
+            const color = owner ? getPlayerStyle(owner).trail : "#6a766f";
             return `
               <line
                 class="edge ${owner ? "owned" : ""} ${isHighlighted ? "highlight" : ""}"
@@ -571,7 +692,7 @@ function renderBoard(gameState) {
             const isManorTarget = highlightManors.has(node.id);
             const highlight = isCottageTarget || isManorTarget;
             const owner = structure?.ownerId;
-            const color = owner ? getPlayerColor(owner) : "#ebe6dc";
+            const color = owner ? getPlayerStyle(owner).structure : "#ebe6dc";
 
             const cottagePath = `M ${node.x - 10} ${node.y + 7} L ${node.x + 10} ${node.y + 7} L ${node.x + 10} ${node.y - 2} L ${node.x} ${node.y - 11} L ${node.x - 10} ${node.y - 2} Z`;
             const manorPath = `M ${node.x - 12} ${node.y + 8} L ${node.x + 12} ${node.y + 8} L ${node.x + 12} ${node.y - 4} L ${node.x + 4} ${node.y - 4} L ${node.x + 4} ${node.y - 14} L ${node.x - 4} ${node.y - 14} L ${node.x - 4} ${node.y - 4} L ${node.x - 12} ${node.y - 4} Z`;
