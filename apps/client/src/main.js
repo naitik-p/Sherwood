@@ -521,24 +521,6 @@ function renderBoard(gameState) {
     <div class="board-wrap panel section">
       <svg class="board-svg" viewBox="${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}">
         <circle cx="0" cy="0" r="${board.hexSize * 4.2}" fill="#eadfca" />
-        ${board.edges
-          .map((edge) => {
-            const a = board.intersections.find((node) => node.id === edge.a);
-            const b = board.intersections.find((node) => node.id === edge.b);
-            const owner = gameState.structures.edges[edge.id];
-            const isHighlighted = highlightTrails.has(edge.id);
-            const color = owner ? getPlayerColor(owner) : "#56655c";
-            return `
-              <line
-                class="edge ${owner ? "owned" : ""} ${isHighlighted ? "highlight" : ""}"
-                x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
-                stroke="${color}"
-                data-edge-id="${edge.id}"
-              />
-            `;
-          })
-          .join("")}
-
         ${board.hexes
           .map((hex) => {
             const frost = frostByHex.get(hex.id);
@@ -560,6 +542,24 @@ function renderBoard(gameState) {
                 ${charter ? `<polygon points='${hexPoints(hex, board.hexSize * 0.68)}' fill='none' stroke='#8d6e2a' stroke-width='3.5' />` : ""}
                 ${charter ? `<text class='overlay-badge' x='${hex.x}' y='${hex.y + 34}'>Charter ${gameState.charterClaim.remainingGlobalTurns}</text>` : ""}
               </g>
+            `;
+          })
+          .join("")}
+
+        ${board.edges
+          .map((edge) => {
+            const a = board.intersections.find((node) => node.id === edge.a);
+            const b = board.intersections.find((node) => node.id === edge.b);
+            const owner = gameState.structures.edges[edge.id];
+            const isHighlighted = highlightTrails.has(edge.id);
+            const color = owner ? getPlayerColor(owner) : "#56655c";
+            return `
+              <line
+                class="edge ${owner ? "owned" : ""} ${isHighlighted ? "highlight" : ""}"
+                x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+                stroke="${color}"
+                data-edge-id="${edge.id}"
+              />
             `;
           })
           .join("")}

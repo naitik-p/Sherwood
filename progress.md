@@ -22,3 +22,12 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
   - Options panel with numbered shortcuts, fast-build highlighting, confirm/cancel placement.
   - Trading desk, bazaar panel with ratios/templates, dev card panel, and narrated event log.
   - `window.render_game_to_text` and `window.advanceTime` hooks for automated game-loop checks.
+
+## 2026-02-17
+- Investigated setup-phase freeze reported as "first trail cannot be placed after first cottage."
+- Root cause found in client SVG layering: trail edges were rendered before terrain polygons, so tile polygons sat on top and intercepted clicks.
+- Fix applied in `apps/client/src/main.js`: render terrain hexes first, then trail edges, then intersections/structures.
+- Verified manually with Playwright: in setup phase, clicking highlighted trail now opens confirm banner and `buildTrail` succeeds; event log records `placed a Trail`.
+- Regression checks run:
+  - `npm test` (core engine): 5/5 passing.
+  - `npm run build` (workspace): successful.
