@@ -1,24 +1,24 @@
 {
   "ok": true,
-  "roomId": "r_8b1cd106",
+  "roomId": "r_36ad46d8",
   "turnsPerPlayer": {
-    "ply_9d867fb0983f449a98d7feeefd8bfe38": 3,
-    "ply_1b1a6cdf8e1347588a8fe34740d5c0e7": 3,
-    "ply_8d2b78bb9ec344afb46ff9055e534958": 3,
-    "ply_7c2a0bfa7b8f4a12be326d81e22f8bcc": 3
+    "ply_7348e6d9bf9f460692efd9cbfd802c7e": 3,
+    "ply_954b26fe520b4b0a8662735bb7a1d9d3": 3,
+    "ply_3bdbc2337cca48869f3d0ab18cc2dd56": 3,
+    "ply_b366996d86cd49939799430a9cf7f27f": 3
   },
   "setupResourcesPerPlayer": {
-    "ply_9d867fb0983f449a98d7feeefd8bfe38": 6,
-    "ply_1b1a6cdf8e1347588a8fe34740d5c0e7": 3,
-    "ply_8d2b78bb9ec344afb46ff9055e534958": 4,
-    "ply_7c2a0bfa7b8f4a12be326d81e22f8bcc": 5
+    "ply_7348e6d9bf9f460692efd9cbfd802c7e": 6,
+    "ply_954b26fe520b4b0a8662735bb7a1d9d3": 3,
+    "ply_3bdbc2337cca48869f3d0ab18cc2dd56": 4,
+    "ply_b366996d86cd49939799430a9cf7f27f": 5
   },
-  "uniqueRollCount": 6,
+  "uniqueRollCount": 7,
   "trailsBuiltByPlayer": {
-    "ply_9d867fb0983f449a98d7feeefd8bfe38": 1,
-    "ply_1b1a6cdf8e1347588a8fe34740d5c0e7": 0,
-    "ply_8d2b78bb9ec344afb46ff9055e534958": 0,
-    "ply_7c2a0bfa7b8f4a12be326d81e22f8bcc": 0
+    "ply_7348e6d9bf9f460692efd9cbfd802c7e": 0,
+    "ply_954b26fe520b4b0a8662735bb7a1d9d3": 0,
+    "ply_3bdbc2337cca48869f3d0ab18cc2dd56": 2,
+    "ply_b366996d86cd49939799430a9cf7f27f": 2
   },
   "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-3-turns.png"
 }

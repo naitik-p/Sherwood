@@ -1,6 +1,6 @@
 import "./styles.css";
 
-import { RESOURCE_LABELS, RESOURCES, WIN_MODES } from "@shorewood/core";
+import { BUILD_COSTS, RESOURCE_LABELS, RESOURCES, WIN_MODES } from "@shorewood/core";
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ||
@@ -374,9 +374,8 @@ function avatarIcon(id) {
 }
 
 function toResourceText(bag) {
-  return Object.entries(bag)
-    .filter(([, amount]) => amount > 0)
-    .map(([resource, amount]) => `${amount} ${RESOURCE_LABELS[resource]}`)
+  return RESOURCES.filter((resource) => (bag?.[resource] ?? 0) > 0)
+    .map((resource) => `${bag[resource]} ${RESOURCE_LABELS[resource]}`)
     .join(", ");
 }
 
@@ -977,6 +976,8 @@ function renderDevConfirmation() {
 
 function renderPlayerList(gameState) {
   const activeId = gameState.turn?.activePlayerId;
+  const me = gameState.players.find((player) => player.id === state.playerId);
+  const myResources = me?.resources || {};
 
   return `
     <div class="section panel">
@@ -991,11 +992,21 @@ function renderPlayerList(gameState) {
                 <div><strong>${escapeHtml(player.name)}</strong> ${player.id === activeId ? '<span class="status-pill">Turn</span>' : ""}</div>
                 <div class="muted">${player.points} pts</div>
               </div>
-              <div class="muted">${player.id === state.playerId ? toResourceText(player.resources || {}) || "No cards" : `${player.resourceCount} cards`}</div>
+              <div class="muted">${player.resourceCount} cards</div>
             </div>
           `;
         })
         .join("")}
+      ${
+        me
+          ? `
+        <div class="resource-inventory">
+          <div><strong>Your Cards</strong></div>
+          ${RESOURCES.map((resource) => `<div>${RESOURCE_LABELS[resource]}: ${myResources[resource] ?? 0}</div>`).join("")}
+        </div>
+      `
+          : ""
+      }
     </div>
   `;
 }
@@ -1064,6 +1075,34 @@ function renderTradePanel(gameState) {
               </div>
             `;
           })
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderBuildCostsPanel() {
+  const costRows = [
+    { label: "Trail", cost: BUILD_COSTS.trail },
+    { label: "Cottage", cost: BUILD_COSTS.cottage },
+    { label: "Manor", cost: BUILD_COSTS.manor },
+    { label: "Dev Card", cost: BUILD_COSTS.dev_card }
+  ];
+
+  return `
+    <div class="section panel build-costs-panel">
+      <h3>Build Costs</h3>
+      <div class="muted">Resources needed</div>
+      <div class="build-cost-list">
+        ${costRows
+          .map(
+            (entry) => `
+          <div class="build-cost-row">
+            <span>${entry.label}</span>
+            <span>${toResourceText(entry.cost)}</span>
+          </div>
+        `
+          )
           .join("")}
       </div>
     </div>
@@ -1192,6 +1231,7 @@ function renderGame() {
         <aside class="left">
           ${renderPlayerList(gs)}
           ${renderTradePanel(gs)}
+          ${renderBuildCostsPanel()}
         </aside>
 
         <main class="center">
