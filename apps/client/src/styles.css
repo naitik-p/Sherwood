@@ -255,6 +255,34 @@ select {
   font-weight: 700;
 }
 
+.market {
+  pointer-events: none;
+}
+
+.market-hex.outer {
+  fill: #efe0c8;
+  stroke: #8d7857;
+  stroke-width: 1.4;
+}
+
+.market-hex.inner {
+  fill: #f9f1e5;
+  stroke: #ad9a7a;
+  stroke-width: 1;
+}
+
+.market-icon {
+  filter: drop-shadow(0 0 0.8px rgba(240, 235, 227, 0.92));
+}
+
+.market-ratio {
+  font-size: 8px;
+  fill: #4a4134;
+  text-anchor: middle;
+  font-family: "Nunito", sans-serif;
+  font-weight: 800;
+}
+
 .options-list {
   margin: 0;
   padding: 0;

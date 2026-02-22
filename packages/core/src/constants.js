@@ -73,7 +73,7 @@ export const BAZAAR_STALLS = [
   { kind: "generic", resource: null, ratio: 3 },
   { kind: "generic", resource: null, ratio: 3 },
   { kind: "generic", resource: null, ratio: 3 },
-  { kind: "dusty", resource: null, ratio: 4 }
+  { kind: "generic", resource: null, ratio: 3 }
 ];
 
 export const COLORS = {

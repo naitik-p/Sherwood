@@ -25,10 +25,10 @@ const AVATARS = [
 ];
 
 const PLAYER_STYLES = [
-  { trail: "#0d4f73", structure: "#2f94ba" },
-  { trail: "#8c3f2d", structure: "#cc6e57" },
-  { trail: "#365e2d", structure: "#6ea95f" },
-  { trail: "#69417b", structure: "#a271bd" }
+  { trail: "#ffffff", structure: "#ffffff" },
+  { trail: "#2f6fe0", structure: "#2f6fe0" },
+  { trail: "#3c9c54", structure: "#3c9c54" },
+  { trail: "#d44747", structure: "#d44747" }
 ];
 
 const TERRAIN_COLORS = {
@@ -38,6 +38,14 @@ const TERRAIN_COLORS = {
   golden_fields: "#d9c8a0",
   ironridge: "#9daab8",
   wild_heath: "#b9ae9d"
+};
+
+const RESOURCE_TO_TERRAIN = {
+  timber: "whisperwood",
+  clay: "clay_pits",
+  wool: "shepherds_meadow",
+  harvest: "golden_fields",
+  iron: "ironridge"
 };
 
 const TERRAIN_EMBLEMS = {
@@ -584,10 +592,14 @@ function computeBoardBounds(board) {
 }
 
 function hexPoints(hex, size) {
+  return hexPointsAt(hex.x, hex.y, size);
+}
+
+function hexPointsAt(x, y, size) {
   const points = [];
   for (let i = 0; i < 6; i += 1) {
     const angle = (Math.PI / 180) * (60 * i - 30);
-    points.push(`${hex.x + size * Math.cos(angle)},${hex.y + size * Math.sin(angle)}`);
+    points.push(`${x + size * Math.cos(angle)},${y + size * Math.sin(angle)}`);
   }
   return points.join(" ");
 }
@@ -658,6 +670,59 @@ function renderTerrainEmblem(hex) {
           ${renderTerrainGlyph(hex.terrainId, emblem)}
         </g>
       </g>
+    </g>
+  `;
+}
+
+function renderMarketGlyph(stall) {
+  if (stall.kind === "specific" && stall.resource) {
+    const terrainId = RESOURCE_TO_TERRAIN[stall.resource];
+    const emblem = TERRAIN_EMBLEMS[terrainId];
+    if (terrainId && emblem) {
+      return `
+        <circle cx="0" cy="0" r="10.7" fill="${emblem.badgeBg}" stroke="${emblem.badgeStroke}" stroke-width="1.2" />
+        <g transform="scale(0.8)">
+          ${renderTerrainGlyph(terrainId, emblem)}
+        </g>
+      `;
+    }
+  }
+
+  return `
+    <circle cx="0" cy="0" r="10.7" fill="#f8efe0" stroke="#8f8268" stroke-width="1.2" />
+    <path d="M-5.8 -3.8 L5.8 -3.8 L2.1 -7.4 M-2.1 7.4 L-5.8 3.8 L5.8 3.8" fill="none" stroke="#6f614a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M-6.6 -4.2 L6.6 4.2" stroke="#6f614a" stroke-width="1.2" stroke-linecap="round" />
+  `;
+}
+
+function renderMarket(node, hexSize) {
+  if (!node.stall) {
+    return "";
+  }
+
+  const size = hexSize / 3;
+  const magnitude = Math.hypot(node.x, node.y) || 1;
+  const offsetX = (node.x / magnitude) * size * 0.95;
+  const offsetY = (node.y / magnitude) * size * 0.95;
+  const centerX = node.x + offsetX;
+  const centerY = node.y + offsetY;
+  const resourceAttr = node.stall.resource ? `data-market-resource="${escapeAttr(node.stall.resource)}"` : "";
+
+  return `
+    <g
+      class="market"
+      data-market-id="${escapeAttr(node.stall.id)}"
+      data-market-kind="${escapeAttr(node.stall.kind)}"
+      data-market-ratio="${node.stall.ratio}"
+      data-market-size="${size.toFixed(2)}"
+      ${resourceAttr}
+    >
+      <polygon class="market-hex outer" points="${hexPointsAt(centerX, centerY, size)}" />
+      <polygon class="market-hex inner" points="${hexPointsAt(centerX, centerY, size * 0.74)}" />
+      <g class="market-icon" transform="translate(${centerX} ${centerY - 1}) scale(0.52)">
+        ${renderMarketGlyph(node.stall)}
+      </g>
+      <text class="market-ratio" x="${centerX}" y="${centerY + size * 0.79}">${node.stall.ratio}:1</text>
     </g>
   `;
 }
@@ -754,8 +819,7 @@ function renderBoard(gameState) {
                   r="${highlight ? 7 : 5}"
                   data-intersection-id="${node.id}"
                 />
-                ${node.stall ? `<circle cx='${node.x + 10}' cy='${node.y - 10}' r='5.5' fill='#efe4cf' stroke='#8a7452' stroke-width='1.2' />` : ""}
-                ${node.stall ? `<text class='overlay-badge' x='${node.x + 10}' y='${node.y - 8}'>${node.stall.ratio}:1</text>` : ""}
+                ${renderMarket(node, board.hexSize)}
                 ${structure && structure.type === "cottage" ? `<path class='structure cottage' d='${cottagePath}' fill='${color}' />` : ""}
                 ${structure && structure.type === "manor" ? `<path class='structure manor' d='${manorPath}' fill='${color}' />` : ""}
               </g>
@@ -1409,14 +1473,23 @@ function render() {
 window.render_game_to_text = () => {
   const gs = state.gameState;
   const me = getMeInGame();
+  const markets = gs?.board?.intersections?.filter((node) => Boolean(node.stall)) || [];
+  const marketSummary = {
+    total: markets.length,
+    ratio_2_to_1: markets.filter((node) => node.stall.ratio === 2).length,
+    ratio_3_to_1: markets.filter((node) => node.stall.ratio === 3).length
+  };
   const payload = {
     coordinate_system: "SVG viewBox with +x right and +y down",
     mode: gs?.phase || "lobby",
     room_id: state.roomId,
     active_player_id: gs?.turn?.activePlayerId || null,
     turn_number: gs?.turn?.number || 0,
+    last_roll: gs?.turn?.lastRoll || null,
     legal_actions: gs?.legalActions || [],
+    setup_step: gs?.setup?.currentStep || null,
     pending_placement: state.pendingPlacement,
+    market_summary: marketSummary,
     me: me
       ? {
           id: me.id,

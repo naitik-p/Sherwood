@@ -408,7 +408,7 @@ function currentSetupStep(state) {
   return state.setup.queue[state.setup.index] ?? null;
 }
 
-function grantSecondPlacementResources(state, player, intersectionId, ts = Date.now()) {
+function grantSetupPlacementResources(state, player, intersectionId, ts = Date.now()) {
   const node = getIntersection(state.board, intersectionId);
   const gains = emptyResources();
 
@@ -424,7 +424,7 @@ function grantSecondPlacementResources(state, player, intersectionId, ts = Date.
   const summary = compactBag(gains);
   if (Object.keys(summary).length > 0) {
     const parts = Object.entries(summary).map(([resource, amount]) => `${amount} ${resource}`);
-    pushLog(state, `${player.name} receives starting resources from second placement: ${parts.join(", ")}.`, ts);
+    pushLog(state, `${player.name} receives starting resources from setup placement: ${parts.join(", ")}.`, ts);
   }
 }
 
@@ -669,10 +669,7 @@ export function buildCottage(state, playerId, intersectionId, ts = Date.now()) {
 
   if (state.phase === "setup") {
     state.setup.mustTrailFrom = intersectionId;
-    const step = currentSetupStep(state);
-    if (step?.round === 2 && player.cottages.length === 2) {
-      grantSecondPlacementResources(state, player, intersectionId, ts);
-    }
+    grantSetupPlacementResources(state, player, intersectionId, ts);
     advanceSetupPointer(state, ts);
   }
 
@@ -1095,10 +1092,11 @@ export function getLegalActions(state, playerId) {
 
 export function getFastBuildTargets(state, playerId) {
   const player = getPlayer(state, playerId);
+  const canUpgradeManor = state.phase === "main" && state.turn?.rolled;
   return {
     trails: player.pieces.trailsRemaining > 0 ? legalTrailTargets(state, playerId) : [],
     cottages: player.pieces.cottagesRemaining > 0 ? legalCottageTargets(state, playerId) : [],
-    manors: player.pieces.manorsRemaining > 0 ? legalManorTargets(state, playerId) : []
+    manors: canUpgradeManor && player.pieces.manorsRemaining > 0 ? legalManorTargets(state, playerId) : []
   };
 }
 

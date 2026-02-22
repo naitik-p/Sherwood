@@ -54,3 +54,51 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
   - Browser smoke flow (create room, admit, ready, start match): pass.
   - Credential leak check: `roomState` no longer contains session tokens.
   - Reconnect abuse test: reconnect without secret is rejected.
+
+## 2026-02-22
+- Began full gameplay validation pass for setup flow, starting resources, markets, dice/resource output, and post-roll actions.
+- Fixed bazaar stall definition mismatch in `packages/core/src/constants.js`: now exactly 9 stalls with 5 specific `2:1` and 4 generic `3:1` ratios.
+- Upgraded market visuals in `apps/client/src/main.js` and `apps/client/src/styles.css`:
+  - Each stall now renders as a small hex marker (~1/3 standard hex size) positioned outward on coastal intersections.
+  - Added explicit icons per specific-resource stall and a generic exchange icon for `3:1` stalls.
+  - Added market metadata attributes for automated verification and enriched `render_game_to_text` with market summary + setup/roll context.
+- Added expanded core tests in `packages/core/test/engine.test.js` for:
+  - full two-player snake setup completion,
+  - second-cottage starting resource grants by adjacent producing hexes,
+  - market ratio/count/coastal placement constraints,
+  - roll-range/variability checks,
+  - post-roll build + bank-trade + end-turn action flow.
+- Next: run lint/tests/build and execute browser gameplay smoke checks with screenshots + state validation.
+- Found and fixed a setup-phase regression during browser E2E: manor targets were exposed in setup (`getFastBuildTargets`), allowing accidental `upgradeManor` attempts and blocking second-cottage progress.
+  - Fix: gate manor targets to main phase after roll (`state.phase === "main" && state.turn?.rolled`).
+  - Added regression test: `manor fast-build targets are hidden until main phase roll is completed`.
+- Browser E2E gameplay validation (`node output/shorewood_gameplay_check.mjs`) now passes with:
+  - full 2-player lobby -> admit -> ready -> start -> vote -> full snake setup completion,
+  - observed setup starting-resource grant log,
+  - market metrics: 9 total, 5 at `2:1`, 4 at `3:1`, all with hex marker + icon, marker size `28` (for hex size 84),
+  - repeated roll/end-turn cycle with varied rolls (`rollVariety: 8`),
+  - trade-offer action success and build-capable target visibility after roll.
+- Required web-game skill client run completed via:
+  - `node ~/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js ...`
+  - Captured artifacts in `output/web-game/` and visually inspected latest screenshots.
+- Updated setup resource rule to grant starting resources on **both** setup cottage placements (not just second).
+  - Engine change: `buildCottage` now calls setup grant helper for any setup cottage placement.
+  - Log text updated to: `receives starting resources from setup placement`.
+- Updated player piece color mapping in client to strict order:
+  - P1 white (`#ffffff`), P2 blue (`#2f6fe0`), P3 green (`#3c9c54`), P4 red (`#d44747`).
+  - Applies to trails, cottages, and manors.
+- Expanded/updated tests:
+  - setup grants verified per cottage placement with per-placement gain bounds `0..3` and pre-roll total bound `<= 6`.
+- Browser E2E check (`output/setup_and_colors_check.mjs`) validated:
+  - setup completes to main phase,
+  - setup resource totals tracked before first roll (`6` and `3` in one run, both <= 6),
+  - white/blue trail + structure colors present in rendered SVG.
+- Ran comprehensive 4-player browser pass (`output/four_player_comprehensive_pass.mjs`): lobby admit/ready/start, win vote, full 16-step snake setup, then 3 turns per player (12 total turns).
+- Rule checks in pass:
+  - setup resource gain per cottage bounded `0..3`, and per-player pre-roll setup totals bounded `<= 6`.
+  - pre-roll end-turn attempt rejected (error toast check), requiring roll before end turn.
+  - roll outputs bounded `2..12` with observed variation (`uniqueRollCount: 7`).
+  - post-roll trail build attempted whenever player had both timber+clay and legal adjacent trail targets; trail cost consumption validated when build occurred.
+- Artifacts generated:
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-3-turns.png`
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-pass-summary.json`
