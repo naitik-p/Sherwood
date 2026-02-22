@@ -102,3 +102,12 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
 - Artifacts generated:
   - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-3-turns.png`
   - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-pass-summary.json`
+- Fixed trail color rendering mismatch root cause: CSS `.edge` stroke was overriding SVG `stroke` presentation attributes on owned trails.
+  - Updated owned trail line to use inline style (`style="stroke:..."`) so player color is authoritative.
+- Tightened fast-build target logic (`getFastBuildTargets`) so build highlights only appear for truly legal build windows:
+  - setup: only current player and current step type
+  - main: only active player after roll
+  - otherwise no build targets
+- Added regression rule test for disconnected trail rejection in main phase.
+- Re-ran 4-player comprehensive pass and captured updated screenshot with clearly matching trail/structure player colors:
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-3-turns.png`

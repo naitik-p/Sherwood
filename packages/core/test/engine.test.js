@@ -156,15 +156,46 @@ describe("engine rules", () => {
   test("manor fast-build targets are hidden until main phase roll is completed", () => {
     const state = createMatch();
     forceVoteToFirstToTen(state);
-    expect(getFastBuildTargets(state, "p1").manors).toEqual([]);
+    const setupTargets = getFastBuildTargets(state, "p1");
+    expect(setupTargets.manors).toEqual([]);
+    expect(setupTargets.trails).toEqual([]);
+    expect(setupTargets.cottages.length).toBeGreaterThan(0);
 
     completeSnakeSetup(state);
     const activePlayerId = state.turn.order[state.turn.index];
-    expect(getFastBuildTargets(state, activePlayerId).manors).toEqual([]);
+    expect(getFastBuildTargets(state, activePlayerId)).toEqual({ trails: [], cottages: [], manors: [] });
 
     const [d1, d2] = pickDiceForTotal(6);
     rollDice(state, activePlayerId, 1_900, rngForDice(d1, d2));
     expect(getFastBuildTargets(state, activePlayerId).manors.length).toBeGreaterThan(0);
+  });
+
+  test("rejects disconnected trail placements in main phase", () => {
+    const state = createMatch();
+    forceVoteToFirstToTen(state);
+    completeSnakeSetup(state);
+
+    const activePlayerId = state.turn.order[state.turn.index];
+    state.players[activePlayerId].resources = {
+      timber: 5,
+      clay: 5,
+      wool: 0,
+      harvest: 0,
+      iron: 0
+    };
+
+    const [d1, d2] = pickDiceForTotal(6);
+    rollDice(state, activePlayerId, 1_930, rngForDice(d1, d2));
+
+    const legalTrails = new Set(getFastBuildTargets(state, activePlayerId).trails);
+    expect(legalTrails.size).toBeGreaterThan(0);
+
+    const disconnected = state.board.edges
+      .map((edge) => edge.id)
+      .find((edgeId) => !legalTrails.has(edgeId) && !state.structures.edges[edgeId]);
+
+    expect(Boolean(disconnected)).toBe(true);
+    expect(() => buildTrail(state, activePlayerId, disconnected, 1_931)).toThrow(/Illegal trail placement/);
   });
 
   test("grants one starting resource per producing hex for each setup cottage (up to 6 total before first roll)", () => {

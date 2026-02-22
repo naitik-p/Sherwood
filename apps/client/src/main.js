@@ -787,9 +787,24 @@ function renderBoard(gameState) {
             const owner = gameState.structures.edges[edge.id];
             const isHighlighted = highlightTrails.has(edge.id);
             const color = owner ? getPlayerStyle(owner).trail : "#6a766f";
+            if (owner) {
+              return `
+                <g>
+                  <line
+                    class="edge-owned-outline"
+                    x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+                  />
+                  <line
+                    class="edge owned"
+                    x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+                    style="stroke:${color};"
+                  />
+                </g>
+              `;
+            }
             return `
               <line
-                class="edge ${owner ? "owned" : ""} ${isHighlighted ? "highlight" : ""}"
+                class="edge ${isHighlighted ? "highlight" : ""}"
                 x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
                 stroke="${color}"
                 data-edge-id="${edge.id}"

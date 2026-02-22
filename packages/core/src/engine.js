@@ -1092,11 +1092,27 @@ export function getLegalActions(state, playerId) {
 
 export function getFastBuildTargets(state, playerId) {
   const player = getPlayer(state, playerId);
-  const canUpgradeManor = state.phase === "main" && state.turn?.rolled;
+
+  if (state.phase === "setup") {
+    const step = currentSetupStep(state);
+    if (!step || step.playerId !== playerId) {
+      return { trails: [], cottages: [], manors: [] };
+    }
+    return {
+      trails: step.type === "trail" && player.pieces.trailsRemaining > 0 ? legalTrailTargets(state, playerId) : [],
+      cottages: step.type === "cottage" && player.pieces.cottagesRemaining > 0 ? legalCottageTargets(state, playerId) : [],
+      manors: []
+    };
+  }
+
+  if (state.phase !== "main" || getActivePlayerId(state) !== playerId || !state.turn?.rolled) {
+    return { trails: [], cottages: [], manors: [] };
+  }
+
   return {
     trails: player.pieces.trailsRemaining > 0 ? legalTrailTargets(state, playerId) : [],
     cottages: player.pieces.cottagesRemaining > 0 ? legalCottageTargets(state, playerId) : [],
-    manors: canUpgradeManor && player.pieces.manorsRemaining > 0 ? legalManorTargets(state, playerId) : []
+    manors: player.pieces.manorsRemaining > 0 ? legalManorTargets(state, playerId) : []
   };
 }
 
