@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "build": "echo 'server build: source-only package'",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "db:verify": "node scripts/verify_db.mjs"
   },
   "dependencies": {
     "@shorewood/core": "0.1.0",

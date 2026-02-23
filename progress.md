@@ -195,3 +195,58 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
   - `configuration-reference.md` (complete env var reference + dotenv cwd caveat)
   - `websocket-protocol.md` (client/server message contract)
   - `troubleshooting.md` (options visibility, invalid-action gating, Supabase connection pitfalls, reconnect/rate-limit issues)
+
+## 2026-02-23 (Supabase persistence hardening + DB verification command)
+- Implemented persistence model expansion in `apps/server/src/db.js`:
+  - `shorewood_players` now persists runtime identity/session state required for true room restore:
+    - `player_id`, `reconnect_secret`, `status`, `ready`, `is_host`
+  - Added idempotent schema backfill via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` in `init()` so existing installs migrate automatically.
+  - Added unique index on `(room_id, player_id)` (where `player_id` is not null).
+  - Strengthened schema validation to require expected player-room foreign key presence.
+  - Added new persistence ops used by server runtime:
+    - `listActiveRooms(nowMs)`
+    - `removePlayer(roomId, sessionToken)`
+    - `deleteRoom(roomId)`
+  - `latestSnapshot()` now orders by `(created_at DESC, id DESC)` for deterministic latest selection.
+- Implemented startup restore path in `apps/server/src/index.js`:
+  - server now restores all non-expired rooms from Postgres at startup (`restorePersistedRooms()`).
+  - restores players (including reconnect/session state) and latest snapshot-backed match state.
+  - repairs incomplete persisted player rows during restore by normalizing + upserting required fields.
+  - `/health` now reports:
+    - `persistence` from actual store mode
+    - `restoredRooms`, `restoredPlayers`, `restoredSnapshots`
+- Implemented persistence cleanup alignment:
+  - Host deny now removes pending player from DB (`store.removePlayer(...)`).
+  - Room expiry now deletes room from DB (`store.deleteRoom(...)`) so rows do not linger.
+- Hardened maintenance loop:
+  - wrapped periodic maintenance with per-room and top-level try/catch to avoid process-level instability from transient persistence errors.
+- Updated SQL bootstrap script `apps/server/sql/001_init.sql` to include new player columns/index and idempotent backfill statements.
+- Added DB verification utility `apps/server/scripts/verify_db.mjs` and command wiring:
+  - `apps/server/package.json`: `db:verify`
+  - root `package.json`: `db:verify`
+  - verification performs:
+    - connectivity + schema init
+    - room/player/snapshot write-read
+    - cross-process persistence validation (new connection)
+    - cleanup of temp verification room
+  - script now auto-loads root `.env` when run via workspace command.
+- Documentation updates:
+  - `README.md`: added `npm run db:verify` command and behavior summary.
+  - `docs/troubleshooting.md`: added health-restore fields + `db:verify` usage under Supabase diagnostics.
+
+Validation performed:
+- `npm run lint`: pass
+- `npm test`: pass (12/12)
+- `npm run build`: pass
+- Skill-required Playwright web-game client run:
+  - command: `node /Users/Naitik/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://localhost:5173 --click-selector "#create-room-btn" --click "10,10" --iterations 2 --pause-ms 250`
+  - status: pass (executed against local dev stack in memory mode for UI smoke)
+- `npm run db:verify` with current configured Supabase `DATABASE_URL`:
+  - status: fail
+  - error: `ENOTFOUND db.dymvdagbjlqhzilvdyft.supabase.co`
+  - implication: DNS/host resolution failure in current runtime environment; app cannot currently establish DB connectivity with that host.
+
+Next actions for DB connectivity outside code:
+- verify Supabase project DB host is correct/current for this project (project may have rotated host/ref)
+- if host is correct, verify runtime DNS/network egress can resolve and reach `*.supabase.co`
+- if environment is IPv4-constrained, switch `DATABASE_URL` to Supabase pooler endpoint (`*.pooler.supabase.com`) and rerun `npm run db:verify`

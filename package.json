@@ -12,7 +12,8 @@
     "dev": "concurrently -k \"npm --workspace @shorewood/server run dev\" \"npm --workspace @shorewood/client run dev\"",
     "build": "npm --workspace @shorewood/core run build && npm --workspace @shorewood/server run build && npm --workspace @shorewood/client run build",
     "test": "npm --workspace @shorewood/core run test",
-    "lint": "npm --workspace @shorewood/core run lint && npm --workspace @shorewood/server run lint && npm --workspace @shorewood/client run lint"
+    "lint": "npm --workspace @shorewood/core run lint && npm --workspace @shorewood/server run lint && npm --workspace @shorewood/client run lint",
+    "db:verify": "npm --workspace @shorewood/server run db:verify"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

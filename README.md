@@ -86,6 +86,7 @@ npm run dev
 npm test
 npm run lint
 npm run build
+npm run db:verify
 ```
 
 Targeted verification harnesses:
@@ -97,6 +98,13 @@ node output/four_player_6turn_full_retest.mjs
 ```
 
 Artifacts are written to `output/web-game/`.
+
+Database verification:
+- `npm run db:verify` performs a full Postgres check using `DATABASE_URL`:
+  - connectivity + schema validation
+  - room/player/snapshot write-read
+  - cross-process persistence check (new connection reads the same records)
+  - cleanup of temporary verification data
 
 ## Security and Data Boundaries
 

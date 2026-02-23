@@ -54,6 +54,11 @@ const configuredOrigins = CLIENT_ORIGIN.split(",")
 const ALLOW_ALL_ORIGINS = configuredOrigins.includes("*");
 const ALLOWED_ORIGINS = new Set(configuredOrigins);
 const connectionAttemptsByIp = new Map();
+const startupState = {
+  restoredRooms: 0,
+  restoredPlayers: 0,
+  restoredSnapshots: 0
+};
 
 const app = express();
 app.disable("x-powered-by");
@@ -74,7 +79,10 @@ app.get("/health", (_req, res) => {
   res.json({
     ok: true,
     now: new Date().toISOString(),
-    persistence: process.env.DATABASE_URL ? "postgres" : "memory"
+    persistence: store.usePg ? "postgres" : "memory",
+    restoredRooms: startupState.restoredRooms,
+    restoredPlayers: startupState.restoredPlayers,
+    restoredSnapshots: startupState.restoredSnapshots
   });
 });
 
@@ -90,6 +98,15 @@ const store = new RoomStore({
 
 try {
   await store.init();
+  const restoreSummary = await restorePersistedRooms();
+  startupState.restoredRooms = restoreSummary.rooms;
+  startupState.restoredPlayers = restoreSummary.players;
+  startupState.restoredSnapshots = restoreSummary.snapshots;
+  if (store.usePg) {
+    console.log(
+      `Restored ${restoreSummary.rooms} active room(s), ${restoreSummary.players} player record(s), ${restoreSummary.snapshots} snapshot-backed room(s).`
+    );
+  }
 } catch (error) {
   console.error("Failed to initialize Shorewood persistence.");
   console.error("This server expects its own tables and does not use Supabase auth profile foreign keys.");
@@ -324,14 +341,115 @@ async function persistSnapshot(room) {
   });
 }
 
-async function ensurePlayerRecord(roomId, player) {
+async function ensurePlayerRecord(room, player) {
   await store.upsertPlayer({
-    roomId,
+    roomId: room.id,
     sessionToken: player.sessionToken,
+    playerId: player.playerId,
+    reconnectSecret: player.reconnectSecret,
+    status: player.status,
+    ready: player.ready,
+    isHost: player.sessionToken === room.hostSessionToken,
     name: player.name,
     avatarId: player.avatarId,
     lastSeen: Date.now()
   });
+}
+
+function parseTimestampMs(value, fallback = Date.now()) {
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizePersistedStatus(status) {
+  return status === "admitted" ? "admitted" : "pending";
+}
+
+function buildPlayerFromRow(room, row) {
+  const isHost = row.session_token === room.hostSessionToken || row.is_host === true;
+  return {
+    sessionToken: row.session_token,
+    playerId: isValidPlayerId(row.player_id) ? row.player_id : makePlayerId(),
+    reconnectSecret: isValidReconnectSecret(row.reconnect_secret) ? row.reconnect_secret : makeReconnectSecret(),
+    name: normalizeName(row.name, isHost ? "Host" : "Guest"),
+    avatarId: normalizeAvatarId(row.avatar_id),
+    ready: row.ready === true,
+    status: isHost ? "admitted" : normalizePersistedStatus(row.status),
+    socket: null
+  };
+}
+
+async function restorePersistedRooms() {
+  if (!store.usePg) {
+    return { rooms: 0, players: 0, snapshots: 0 };
+  }
+
+  const persistedRooms = await store.listActiveRooms(Date.now());
+  let restoredRooms = 0;
+  let restoredPlayers = 0;
+  let snapshotBackedRooms = 0;
+
+  for (const roomRecord of persistedRooms) {
+    if (!isValidRoomId(roomRecord.id) || !isValidSessionToken(roomRecord.host_token)) {
+      continue;
+    }
+
+    const room = {
+      id: roomRecord.id,
+      createdAt: parseTimestampMs(roomRecord.created_at),
+      expiresAt: parseTimestampMs(roomRecord.expires_at),
+      hostSessionToken: roomRecord.host_token,
+      status: "lobby",
+      players: new Map(),
+      matchState: null,
+      lastBroadcastLogCount: 0
+    };
+
+    const persistedPlayers = await store.listPlayers(room.id);
+    for (const row of persistedPlayers) {
+      if (!isValidSessionToken(row.session_token)) {
+        continue;
+      }
+
+      const player = buildPlayerFromRow(room, row);
+      room.players.set(player.sessionToken, player);
+      await ensurePlayerRecord(room, player);
+      restoredPlayers += 1;
+    }
+
+    if (!room.players.has(room.hostSessionToken)) {
+      const host = {
+        sessionToken: room.hostSessionToken,
+        playerId: makePlayerId(),
+        reconnectSecret: makeReconnectSecret(),
+        name: "Host",
+        avatarId: "badge_1",
+        ready: false,
+        status: "admitted",
+        socket: null
+      };
+      room.players.set(host.sessionToken, host);
+      await ensurePlayerRecord(room, host);
+      restoredPlayers += 1;
+    }
+
+    const latestSnapshot = await store.latestSnapshot(room.id);
+    if (latestSnapshot && typeof latestSnapshot === "object") {
+      room.matchState = latestSnapshot;
+      room.status = "in_game";
+      room.lastBroadcastLogCount = Array.isArray(latestSnapshot.log) ? latestSnapshot.log.length : 0;
+      snapshotBackedRooms += 1;
+    }
+
+    rooms.set(room.id, room);
+    restoredRooms += 1;
+  }
+
+  return {
+    rooms: restoredRooms,
+    players: restoredPlayers,
+    snapshots: snapshotBackedRooms
+  };
 }
 
 function ensureHost(room, sessionToken) {
@@ -398,7 +516,7 @@ async function handleCreateRoom(ws, payload) {
   room.players.set(sessionToken, host);
   rooms.set(roomId, room);
 
-  await ensurePlayerRecord(roomId, host);
+  await ensurePlayerRecord(room, host);
 
   ws.meta = {
     ...(ws.meta ?? {}),
@@ -432,7 +550,7 @@ async function handleRequestJoin(ws, payload) {
     }
 
     attachSocketToPlayer(room, existing.sessionToken, ws);
-    await ensurePlayerRecord(room.id, existing);
+    await ensurePlayerRecord(room, existing);
 
     send(ws, "playerStatus", {
       roomId: room.id,
@@ -469,7 +587,7 @@ async function handleRequestJoin(ws, payload) {
     roomId: room.id,
     sessionToken: pending.sessionToken
   };
-  await ensurePlayerRecord(room.id, pending);
+  await ensurePlayerRecord(room, pending);
 
   send(ws, "playerStatus", {
     roomId: room.id,
@@ -510,7 +628,7 @@ async function handleReconnect(ws, payload) {
   }
 
   attachSocketToPlayer(room, payload.sessionToken, ws);
-  await ensurePlayerRecord(room.id, player);
+  await ensurePlayerRecord(room, player);
 
   send(ws, "playerStatus", {
     roomId: room.id,
@@ -543,7 +661,7 @@ async function handleHostAdmit(ws, payload) {
 
   player.status = "admitted";
   player.ready = false;
-  await ensurePlayerRecord(room.id, player);
+  await ensurePlayerRecord(room, player);
 
   if (player.socket) {
     send(player.socket, "prompt", { kind: "admitted", roomId: room.id });
@@ -570,6 +688,7 @@ async function handleHostDeny(ws, payload) {
     send(player.socket, "error", { reason: "Host denied your join request" });
   }
   room.players.delete(player.sessionToken);
+  await store.removePlayer(room.id, player.sessionToken);
   broadcastRoomState(room);
 }
 
@@ -587,7 +706,7 @@ async function handleSetProfile(ws, payload) {
   if (typeof payload.avatarId === "string") {
     player.avatarId = normalizeAvatarId(payload.avatarId);
   }
-  await ensurePlayerRecord(room.id, player);
+  await ensurePlayerRecord(room, player);
   broadcastRoomState(room);
 }
 
@@ -597,7 +716,7 @@ async function handleReadyUp(ws, payload) {
   const player = ensureAdmittedPlayer(room, sessionToken);
 
   player.ready = Boolean(payload.ready);
-  await ensurePlayerRecord(room.id, player);
+  await ensurePlayerRecord(room, player);
   broadcastRoomState(room);
 }
 
@@ -840,35 +959,44 @@ wss.on("connection", (ws, req) => {
 });
 
 setInterval(async () => {
-  const now = Date.now();
-  for (const [ip, entry] of connectionAttemptsByIp.entries()) {
-    if (now - entry.windowStart > CONNECTION_RATE_WINDOW_MS * 2) {
-      connectionAttemptsByIp.delete(ip);
+  try {
+    const now = Date.now();
+    for (const [ip, entry] of connectionAttemptsByIp.entries()) {
+      if (now - entry.windowStart > CONNECTION_RATE_WINDOW_MS * 2) {
+        connectionAttemptsByIp.delete(ip);
+      }
     }
-  }
 
-  for (const room of rooms.values()) {
-    if (roomExpired(room)) {
-      for (const player of room.players.values()) {
-        if (player.socket) {
-          sendError(player.socket, "Room expired after 24 hours");
-          player.socket.close();
+    for (const room of rooms.values()) {
+      try {
+        if (roomExpired(room)) {
+          for (const player of room.players.values()) {
+            if (player.socket) {
+              sendError(player.socket, "Room expired after 24 hours");
+              player.socket.close();
+            }
+          }
+          rooms.delete(room.id);
+          await store.deleteRoom(room.id);
+          continue;
         }
-      }
-      rooms.delete(room.id);
-      continue;
-    }
 
-    if (room.matchState && room.status === "in_game") {
-      const beforePhase = room.matchState.phase;
-      const voteChanged = maybeResolveVote(room.matchState, now);
-      const timedChanged = checkTimedWin(room.matchState, now);
+        if (room.matchState && room.status === "in_game") {
+          const beforePhase = room.matchState.phase;
+          const voteChanged = maybeResolveVote(room.matchState, now);
+          const timedChanged = checkTimedWin(room.matchState, now);
 
-      if (voteChanged || timedChanged || beforePhase !== room.matchState.phase) {
-        await persistSnapshot(room);
-        broadcastGameState(room);
+          if (voteChanged || timedChanged || beforePhase !== room.matchState.phase) {
+            await persistSnapshot(room);
+            broadcastGameState(room);
+          }
+        }
+      } catch (error) {
+        console.error(`Room maintenance failed for ${room.id}:`, error);
       }
     }
+  } catch (error) {
+    console.error("Periodic maintenance loop failed:", error);
   }
 }, 1000);
 

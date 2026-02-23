@@ -8,7 +8,18 @@ const TABLES = Object.freeze({
 
 const EXPECTED_COLUMNS = Object.freeze({
   [TABLES.rooms]: ["id", "host_token", "created_at", "expires_at"],
-  [TABLES.players]: ["room_id", "session_token", "name", "avatar_id", "last_seen"],
+  [TABLES.players]: [
+    "room_id",
+    "session_token",
+    "player_id",
+    "reconnect_secret",
+    "name",
+    "avatar_id",
+    "status",
+    "ready",
+    "is_host",
+    "last_seen"
+  ],
   [TABLES.snapshots]: ["id", "room_id", "state_json", "created_at"]
 });
 
@@ -69,13 +80,25 @@ export class RoomStore {
       create table if not exists ${TABLES.players} (
         room_id text not null,
         session_token text not null,
+        player_id text,
+        reconnect_secret text,
         name text,
         avatar_id text,
+        status text not null default 'pending',
+        ready boolean not null default false,
+        is_host boolean not null default false,
         last_seen timestamptz not null default now(),
         primary key (room_id, session_token),
         foreign key (room_id) references ${TABLES.rooms}(id) on delete cascade
       );
     `);
+
+    // Backfill older installs that created this table before runtime identity columns existed.
+    await this.pool.query(`alter table ${TABLES.players} add column if not exists player_id text;`);
+    await this.pool.query(`alter table ${TABLES.players} add column if not exists reconnect_secret text;`);
+    await this.pool.query(`alter table ${TABLES.players} add column if not exists status text not null default 'pending';`);
+    await this.pool.query(`alter table ${TABLES.players} add column if not exists ready boolean not null default false;`);
+    await this.pool.query(`alter table ${TABLES.players} add column if not exists is_host boolean not null default false;`);
 
     await this.pool.query(`
       create table if not exists ${TABLES.snapshots} (
@@ -89,6 +112,11 @@ export class RoomStore {
 
     await this.pool.query(`
       create index if not exists ${TABLES.players}_room_idx on ${TABLES.players} (room_id);
+    `);
+    await this.pool.query(`
+      create unique index if not exists ${TABLES.players}_room_player_idx
+      on ${TABLES.players} (room_id, player_id)
+      where player_id is not null;
     `);
 
     await this.pool.query(`
@@ -146,6 +174,17 @@ export class RoomStore {
         );
       }
     }
+    const hasExpectedRoomFk = fkRows.some(
+      (fk) =>
+        fk.column_name === "room_id" &&
+        fk.foreign_table_name === TABLES.rooms &&
+        fk.foreign_column_name === "id"
+    );
+    if (!hasExpectedRoomFk) {
+      throw new Error(
+        `Incompatible schema for ${TABLES.players}: missing foreign key from room_id to ${TABLES.rooms}.id.`
+      );
+    }
   }
 
   roomExpiresAt(createdAtMs = Date.now()) {
@@ -180,10 +219,44 @@ export class RoomStore {
     return this.memory.rooms.get(roomId) ?? null;
   }
 
-  async upsertPlayer({ roomId, sessionToken, name = null, avatarId = null, lastSeen = Date.now() }) {
+  async listActiveRooms(nowMs = Date.now()) {
+    if (this.usePg) {
+      const { rows } = await this.pool.query(
+        `select * from ${TABLES.rooms} where expires_at > $1 order by created_at asc`,
+        [new Date(nowMs).toISOString()]
+      );
+      return rows;
+    }
+
+    const rows = [];
+    for (const room of this.memory.rooms.values()) {
+      if (new Date(room.expires_at).getTime() > nowMs) {
+        rows.push(room);
+      }
+    }
+    return rows;
+  }
+
+  async upsertPlayer({
+    roomId,
+    sessionToken,
+    playerId = null,
+    reconnectSecret = null,
+    status = "pending",
+    ready = false,
+    isHost = false,
+    name = null,
+    avatarId = null,
+    lastSeen = Date.now()
+  }) {
     const record = {
       room_id: roomId,
       session_token: sessionToken,
+      player_id: playerId,
+      reconnect_secret: reconnectSecret,
+      status,
+      ready: Boolean(ready),
+      is_host: Boolean(isHost),
       name,
       avatar_id: avatarId,
       last_seen: new Date(lastSeen).toISOString()
@@ -192,12 +265,32 @@ export class RoomStore {
     if (this.usePg) {
       await this.pool.query(
         `
-          insert into ${TABLES.players} (room_id, session_token, name, avatar_id, last_seen)
-          values ($1, $2, $3, $4, $5)
+          insert into ${TABLES.players}
+          (room_id, session_token, player_id, reconnect_secret, name, avatar_id, status, ready, is_host, last_seen)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           on conflict (room_id, session_token)
-          do update set name = excluded.name, avatar_id = excluded.avatar_id, last_seen = excluded.last_seen
+          do update set
+            player_id = excluded.player_id,
+            reconnect_secret = excluded.reconnect_secret,
+            name = excluded.name,
+            avatar_id = excluded.avatar_id,
+            status = excluded.status,
+            ready = excluded.ready,
+            is_host = excluded.is_host,
+            last_seen = excluded.last_seen
         `,
-        [record.room_id, record.session_token, record.name, record.avatar_id, record.last_seen]
+        [
+          record.room_id,
+          record.session_token,
+          record.player_id,
+          record.reconnect_secret,
+          record.name,
+          record.avatar_id,
+          record.status,
+          record.ready,
+          record.is_host,
+          record.last_seen
+        ]
       );
     } else {
       const key = `${roomId}:${sessionToken}`;
@@ -209,7 +302,10 @@ export class RoomStore {
 
   async listPlayers(roomId) {
     if (this.usePg) {
-      const { rows } = await this.pool.query(`select * from ${TABLES.players} where room_id = $1`, [roomId]);
+      const { rows } = await this.pool.query(
+        `select * from ${TABLES.players} where room_id = $1 order by is_host desc, last_seen asc`,
+        [roomId]
+      );
       return rows;
     }
 
@@ -220,6 +316,28 @@ export class RoomStore {
       }
     }
     return rows;
+  }
+
+  async removePlayer(roomId, sessionToken) {
+    if (this.usePg) {
+      await this.pool.query(`delete from ${TABLES.players} where room_id = $1 and session_token = $2`, [roomId, sessionToken]);
+      return;
+    }
+    this.memory.players.delete(`${roomId}:${sessionToken}`);
+  }
+
+  async deleteRoom(roomId) {
+    if (this.usePg) {
+      await this.pool.query(`delete from ${TABLES.rooms} where id = $1`, [roomId]);
+      return;
+    }
+    this.memory.rooms.delete(roomId);
+    this.memory.snapshots.delete(roomId);
+    for (const key of this.memory.players.keys()) {
+      if (key.startsWith(`${roomId}:`)) {
+        this.memory.players.delete(key);
+      }
+    }
   }
 
   async saveSnapshot({ roomId, stateJson }) {
@@ -250,7 +368,7 @@ export class RoomStore {
   async latestSnapshot(roomId) {
     if (this.usePg) {
       const { rows } = await this.pool.query(
-        `select state_json from ${TABLES.snapshots} where room_id = $1 order by created_at desc limit 1`,
+        `select state_json from ${TABLES.snapshots} where room_id = $1 order by created_at desc, id desc limit 1`,
         [roomId]
       );
       return rows[0]?.state_json ?? null;

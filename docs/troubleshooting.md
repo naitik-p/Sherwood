@@ -62,6 +62,7 @@ curl http://localhost:8080/health
 ```
 
 Expect `"persistence":"postgres"` if env is loaded.
+`restoredRooms`, `restoredPlayers`, and `restoredSnapshots` should be present and non-negative after startup.
 
 ### Symptom B: startup fails when `DATABASE_URL` is set
 
@@ -74,6 +75,14 @@ Mitigations:
 - verify outbound network/firewall rules
 - verify DB credentials and host/port
 - if needed for cert-chain edge cases, set `DATABASE_SSL_REJECT_UNAUTHORIZED=false`
+
+Run the built-in verification check:
+
+```bash
+npm run db:verify
+```
+
+This command validates connectivity, schema compatibility, write/read behavior, and persistence across a second DB connection.
 
 ## 5) "Origin not allowed" / WS blocked
 
