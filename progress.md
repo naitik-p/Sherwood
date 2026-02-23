@@ -181,3 +181,17 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
   - Root `.env` contains `DATABASE_URL` pointing to Supabase host.
   - Running from `apps/server` without `DOTENV_CONFIG_PATH` leaves `DATABASE_URL` unset (server falls back to memory mode).
   - Forcing root env load (`DOTENV_CONFIG_PATH=../../.env`) makes server attempt Supabase connection, but current runtime returns `EHOSTUNREACH` to Supabase DB endpoint.
+
+## 2026-02-23 (documentation refresh)
+- Completed a full documentation overhaul aligned to current implementation and recent gameplay verification.
+- Updated root docs entrypoint:
+  - `README.md` now includes current feature status, action model, options-visibility note, env loading caveat, and full docs map.
+- Reworked and expanded docs under `docs/`:
+  - `architecture.md` (runtime/data/security/persistence model)
+  - `gameplay-rules.md` (implemented rules, turn-action legality, Shorewood vs classic Catan differences)
+  - `development-testing.md` (dev loop, QA checklist, Playwright harness usage)
+  - `deployment-operations.md` (deployment checklist, Supabase guidance, operational checks)
+- Added new reference docs:
+  - `configuration-reference.md` (complete env var reference + dotenv cwd caveat)
+  - `websocket-protocol.md` (client/server message contract)
+  - `troubleshooting.md` (options visibility, invalid-action gating, Supabase connection pitfalls, reconnect/rate-limit issues)
