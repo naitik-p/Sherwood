@@ -111,3 +111,43 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
 - Added regression rule test for disconnected trail rejection in main phase.
 - Re-ran 4-player comprehensive pass and captured updated screenshot with clearly matching trail/structure player colors:
   - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-3-turns.png`
+
+## 2026-02-23
+- Re-verified turn-flow behavior against Catan-style main-turn sequence and implemented turn-action tightening:
+  - Core rules (`packages/core/src/engine.js`): `proposeTrade` now requires active player + rolled dice in main phase.
+  - `getLegalActions` now reflects Catan timing:
+    - non-active player: `acceptTrade`, `declineTrade`
+    - active pre-roll: `rollDice`, `acceptTrade`, `declineTrade`
+    - active post-roll: full build/trade/dev/end-turn action set.
+- Updated client turn options/UI (`apps/client/src/main.js`) to explicit Catan-style active-turn list:
+  1. Roll Dice
+  2. Build Road
+  3. Build Cottage
+  4. Build Manor
+  5. Buy Development Card
+  6. Post Trade Offer
+  7. Trade with Bazaar
+  8. End Turn
+- Added explicit unavailable-action feedback toasts on click attempts:
+  - pre-roll gating now reports "Roll the dice before taking that action."
+  - insufficient-resource gating reports missing-resource detail for Manor/Development card/trades
+  - illegal board placement clicks now surface explicit feedback instead of no-op.
+- Bound panel actions to the same validation path as options (trade posting, bazaar trade, dev-card purchase) for consistent error messaging.
+- UI polish aligned with user wording:
+  - Build cost labels now use `Road` and `Development Card`
+  - option rows are visibly clickable (`cursor: pointer` + hover state)
+- Updated and expanded automated verification:
+  - Updated 4-player regression script label expectations (`output/four_player_comprehensive_pass.mjs`) from `Roll 2d6` -> `Roll Dice`.
+  - Added focused E2E rule-feedback script: `output/turn_option_feedback_check.mjs`.
+- Verification run results:
+  - `npm test`: pass (12/12)
+  - `npm run lint`: pass
+  - `npm run build`: pass
+  - `node output/four_player_comprehensive_pass.mjs`: pass with screenshot + summary
+  - `node output/turn_option_feedback_check.mjs`: pass; confirmed all target feedback checks true.
+  - Skill-required Playwright client run executed via `node /Users/Naitik/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js ...` (required escalated run due sandbox browser launch restriction).
+- Artifacts:
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-3-turns.png`
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-pass-summary.json`
+  - `/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback.png`
+  - `/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback-summary.json`

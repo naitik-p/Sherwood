@@ -359,12 +359,44 @@ describe("engine rules", () => {
     expect(state.players.p2.resources[targetHex.resource]).toBe(0);
   });
 
-  test("trade acceptance is atomic and validated at execution time", () => {
+  test("trade offers follow turn/roll timing and acceptance remains atomic", () => {
     const state = createMatch();
     forceVoteToFirstToTen(state);
+    completeSnakeSetup(state);
+
+    const activePlayerId = state.turn.order[state.turn.index];
+    const waitingPlayerId = state.turn.order[(state.turn.index + 1) % state.turn.order.length];
+    expect(activePlayerId).toBe("p1");
+    expect(waitingPlayerId).toBe("p2");
+
+    const preRollState = getPublicGameState(state, activePlayerId);
+    expect(preRollState.legalActions).toContain("rollDice");
+    expect(preRollState.legalActions).not.toContain("proposeTrade");
+
+    const waitingState = getPublicGameState(state, waitingPlayerId);
+    expect(waitingState.legalActions).toEqual(["acceptTrade", "declineTrade"]);
 
     state.players.p1.resources.timber = 1;
     state.players.p2.resources.iron = 0;
+
+    expect(() =>
+      proposeTrade(
+        state,
+        "p1",
+        {
+          toPlayerId: "p2",
+          give: { timber: 1 },
+          receive: { iron: 1 }
+        },
+        5_000
+      )
+    ).toThrow(/Roll dice before posting a trade offer/);
+
+    const [d1, d2] = pickDiceForTotal(6);
+    rollDice(state, "p1", 5_000, rngForDice(d1, d2));
+
+    const afterRollState = getPublicGameState(state, activePlayerId);
+    expect(afterRollState.legalActions).toContain("proposeTrade");
 
     const offer = proposeTrade(
       state,
@@ -374,20 +406,26 @@ describe("engine rules", () => {
         give: { timber: 1 },
         receive: { iron: 1 }
       },
-      5_000
+      5_001
     );
 
-    expect(() => acceptTrade(state, "p2", offer.id, 5_001)).toThrow(/Acceptor lacks resources/);
-    expect(state.players.p1.resources.timber).toBe(1);
-    expect(state.players.p2.resources.timber).toBe(0);
+    const p1TimberBeforeFailedAccept = state.players.p1.resources.timber;
+    const p2TimberBeforeFailedAccept = state.players.p2.resources.timber;
+    expect(() => acceptTrade(state, "p2", offer.id, 5_002)).toThrow(/Acceptor lacks resources/);
+    expect(state.players.p1.resources.timber).toBe(p1TimberBeforeFailedAccept);
+    expect(state.players.p2.resources.timber).toBe(p2TimberBeforeFailedAccept);
 
     state.players.p2.resources.iron = 1;
-    acceptTrade(state, "p2", offer.id, 5_002);
+    const p1TimberBeforeAccept = state.players.p1.resources.timber;
+    const p2TimberBeforeAccept = state.players.p2.resources.timber;
+    const p1IronBeforeAccept = state.players.p1.resources.iron;
+    const p2IronBeforeAccept = state.players.p2.resources.iron;
+    acceptTrade(state, "p2", offer.id, 5_003);
 
-    expect(state.players.p1.resources.timber).toBe(0);
-    expect(state.players.p2.resources.timber).toBe(1);
-    expect(state.players.p1.resources.iron).toBe(1);
-    expect(state.players.p2.resources.iron).toBe(0);
+    expect(state.players.p1.resources.timber).toBe(p1TimberBeforeAccept - 1);
+    expect(state.players.p2.resources.timber).toBe(p2TimberBeforeAccept + 1);
+    expect(state.players.p1.resources.iron).toBe(p1IronBeforeAccept + 1);
+    expect(state.players.p2.resources.iron).toBe(p2IronBeforeAccept - 1);
   });
 
   test("dice rolls vary over turns and always stay in the 2..12 range", () => {

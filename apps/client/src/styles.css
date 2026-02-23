@@ -318,6 +318,12 @@ select {
   border: 1px solid #d6cfbf;
   border-radius: 10px;
   background: #fefbf5;
+  cursor: pointer;
+}
+
+.option-item:hover {
+  border-color: #b9c9b6;
+  background: #f8fbf3;
 }
 
 .option-num {

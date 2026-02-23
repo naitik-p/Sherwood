@@ -392,6 +392,221 @@ function getPlayerStyle(playerId) {
   return PLAYER_STYLES[idx >= 0 ? idx % PLAYER_STYLES.length : 0];
 }
 
+function showActionMessage(text, kind = "error") {
+  setToast(text, kind);
+  clearToastAfterDelay();
+}
+
+function summarizeMissingCost(resources, cost) {
+  const missing = {};
+  for (const resource of RESOURCES) {
+    const need = cost?.[resource] ?? 0;
+    if (need <= 0) {
+      continue;
+    }
+    const have = resources?.[resource] ?? 0;
+    if (have < need) {
+      missing[resource] = need - have;
+    }
+  }
+  return missing;
+}
+
+function ensureMainTurnAction(gameState, { requiresRoll = false, actionLabel = "That action" } = {}) {
+  if (gameState.phase !== "main") {
+    showActionMessage(`${actionLabel} is not available right now.`);
+    return false;
+  }
+
+  if (gameState.turn?.activePlayerId !== state.playerId) {
+    showActionMessage(`${actionLabel} is only available on your turn.`);
+    return false;
+  }
+
+  if (requiresRoll && !gameState.turn?.rolled) {
+    showActionMessage("Roll the dice before taking that action.");
+    return false;
+  }
+
+  return true;
+}
+
+function attemptRollDice(gameState) {
+  if (!ensureMainTurnAction(gameState, { actionLabel: "Rolling dice" })) {
+    return;
+  }
+  if (gameState.turn?.rolled) {
+    showActionMessage("You already rolled this turn.");
+    return;
+  }
+  send("rollDice", { roomId: state.roomId });
+}
+
+function attemptPrepareBuild(gameState, type) {
+  const me = getMeInGame();
+  if (!me) {
+    return;
+  }
+
+  const rules = {
+    trail: {
+      label: "Road",
+      targetKey: "trails",
+      pieceKey: "trailsRemaining",
+      cost: BUILD_COSTS.trail,
+      hint: "Click a highlighted edge to place your Road."
+    },
+    cottage: {
+      label: "Cottage",
+      targetKey: "cottages",
+      pieceKey: "cottagesRemaining",
+      cost: BUILD_COSTS.cottage,
+      hint: "Click a highlighted intersection to place your Cottage."
+    },
+    manor: {
+      label: "Manor",
+      targetKey: "manors",
+      pieceKey: "manorsRemaining",
+      cost: BUILD_COSTS.manor,
+      hint: "Click a highlighted Cottage to upgrade it to a Manor."
+    }
+  };
+
+  const rule = rules[type];
+  if (!rule) {
+    return;
+  }
+
+  if (!ensureMainTurnAction(gameState, { requiresRoll: true, actionLabel: `Building ${rule.label}` })) {
+    return;
+  }
+
+  if ((me.pieces?.[rule.pieceKey] ?? 0) <= 0) {
+    showActionMessage(`You have no ${rule.label.toLowerCase()} pieces remaining.`);
+    return;
+  }
+
+  const missing = summarizeMissingCost(me.resources, rule.cost);
+  if (Object.keys(missing).length > 0) {
+    showActionMessage(`Not enough resources for ${rule.label}. Missing: ${toResourceText(missing)}.`);
+    return;
+  }
+
+  const targets = gameState.fastBuildTargets?.[rule.targetKey] ?? [];
+  if (targets.length === 0) {
+    showActionMessage(`No legal ${rule.label.toLowerCase()} placements are available right now.`);
+    return;
+  }
+
+  if (!state.fastBuildEnabled) {
+    state.fastBuildEnabled = true;
+    render();
+  }
+  showActionMessage(rule.hint, "info");
+}
+
+function attemptPostTradeOffer(gameState) {
+  if (!ensureMainTurnAction(gameState, { requiresRoll: true, actionLabel: "Posting a trade offer" })) {
+    return;
+  }
+
+  syncTradeDraftFromDom();
+  if (state.tradeDraft.giveResource === state.tradeDraft.receiveResource) {
+    showActionMessage("Choose different resources for trade give and receive.");
+    return;
+  }
+
+  const giveAmount = Number(state.tradeDraft.giveAmount);
+  const receiveAmount = Number(state.tradeDraft.receiveAmount);
+  if (!(Number.isFinite(giveAmount) && giveAmount > 0 && Number.isFinite(receiveAmount) && receiveAmount > 0)) {
+    showActionMessage("Trade amounts must be positive numbers.");
+    return;
+  }
+
+  const me = getMeInGame();
+  if (!me) {
+    return;
+  }
+
+  if ((me.resources?.[state.tradeDraft.giveResource] ?? 0) < giveAmount) {
+    showActionMessage(`You do not have enough ${RESOURCE_LABELS[state.tradeDraft.giveResource]} for that offer.`);
+    return;
+  }
+
+  send("proposeTrade", {
+    roomId: state.roomId,
+    toPlayerId: state.tradeDraft.toPlayerId || null,
+    give: { [state.tradeDraft.giveResource]: giveAmount },
+    receive: { [state.tradeDraft.receiveResource]: receiveAmount }
+  });
+}
+
+function attemptBankTrade(gameState) {
+  if (!ensureMainTurnAction(gameState, { requiresRoll: true, actionLabel: "Bazaar trading" })) {
+    return;
+  }
+
+  syncBankDraftFromDom();
+  if (state.bankDraft.giveResource === state.bankDraft.receiveResource) {
+    showActionMessage("Choose different resources for Bazaar trading.");
+    return;
+  }
+
+  const receiveAmount = Number(state.bankDraft.receiveAmount);
+  if (!(Number.isFinite(receiveAmount) && receiveAmount > 0)) {
+    showActionMessage("Receive amount must be a positive number.");
+    return;
+  }
+
+  const ratio = gameState.bankRatios?.[state.bankDraft.giveResource] ?? 4;
+  const giveAmount = ratio * receiveAmount;
+  const me = getMeInGame();
+  if (!me) {
+    return;
+  }
+
+  if ((me.resources?.[state.bankDraft.giveResource] ?? 0) < giveAmount) {
+    showActionMessage(
+      `Not enough ${RESOURCE_LABELS[state.bankDraft.giveResource]}. Need ${giveAmount} for this ${ratio}:1 Bazaar trade.`
+    );
+    return;
+  }
+
+  send("bankTrade", {
+    roomId: state.roomId,
+    giveResource: state.bankDraft.giveResource,
+    receiveResource: state.bankDraft.receiveResource,
+    receiveAmount,
+    giveAmount
+  });
+}
+
+function attemptBuyDevCard(gameState) {
+  if (!ensureMainTurnAction(gameState, { requiresRoll: true, actionLabel: "Buying a development card" })) {
+    return;
+  }
+
+  const me = getMeInGame();
+  if (!me) {
+    return;
+  }
+
+  const missing = summarizeMissingCost(me.resources, BUILD_COSTS.dev_card);
+  if (Object.keys(missing).length > 0) {
+    showActionMessage(`Not enough resources for a development card. Missing: ${toResourceText(missing)}.`);
+    return;
+  }
+
+  send("buyDevCard", { roomId: state.roomId });
+}
+
+function attemptEndTurn(gameState) {
+  if (!ensureMainTurnAction(gameState, { requiresRoll: true, actionLabel: "Ending your turn" })) {
+    return;
+  }
+  send("endTurn", { roomId: state.roomId });
+}
+
 function triggerOption(index) {
   const handler = state.optionHandlers[index];
   if (handler) {
@@ -847,7 +1062,6 @@ function renderBoard(gameState) {
 
 function computeOptions(gameState) {
   const options = [];
-  const me = getMeInGame();
   const activePlayerId = gameState.turn?.activePlayerId;
   const iAmActive = activePlayerId === state.playerId;
 
@@ -865,32 +1079,21 @@ function computeOptions(gameState) {
 
   if (gameState.phase === "setup") {
     if (gameState.setup?.currentStep?.playerId === state.playerId) {
-      const type = gameState.setup.currentStep.type === "cottage" ? "Cottage" : "Trail";
+      const type = gameState.setup.currentStep.type === "cottage" ? "Cottage" : "Road";
       options.push({ label: `Place ${type} (click highlighted spot)`, action: () => {} });
     }
     return options;
   }
 
   if (gameState.phase === "main" && iAmActive) {
-    if (!gameState.turn.rolled) {
-      options.push({
-        label: "Roll 2d6",
-        action: () => send("rollDice", { roomId: state.roomId })
-      });
-    }
-
-    options.push({
-      label: state.fastBuildEnabled ? "Disable Fast Build" : "Enable Fast Build",
-      action: () => {
-        state.fastBuildEnabled = !state.fastBuildEnabled;
-        render();
-      }
-    });
-
-    options.push({
-      label: "End Turn",
-      action: () => send("endTurn", { roomId: state.roomId })
-    });
+    options.push({ label: "Roll Dice", action: () => attemptRollDice(gameState) });
+    options.push({ label: "Build Road", action: () => attemptPrepareBuild(gameState, "trail") });
+    options.push({ label: "Build Cottage", action: () => attemptPrepareBuild(gameState, "cottage") });
+    options.push({ label: "Build Manor", action: () => attemptPrepareBuild(gameState, "manor") });
+    options.push({ label: "Buy Development Card", action: () => attemptBuyDevCard(gameState) });
+    options.push({ label: "Post Trade Offer", action: () => attemptPostTradeOffer(gameState) });
+    options.push({ label: "Trade with Bazaar", action: () => attemptBankTrade(gameState) });
+    options.push({ label: "End Turn", action: () => attemptEndTurn(gameState) });
   }
 
   if (gameState.pendingHostTieBreak && gameState.hostPlayerId === state.playerId) {
@@ -901,21 +1104,6 @@ function computeOptions(gameState) {
         action: () => send("chooseTimedWinner", { roomId: state.roomId, winnerPlayerId: candidate })
       });
     }
-  }
-
-  if (me && gameState.phase === "main") {
-    options.push({
-      label: "Post Trade Offer",
-      action: () => {
-        const payload = {
-          roomId: state.roomId,
-          toPlayerId: state.tradeDraft.toPlayerId || null,
-          give: { [state.tradeDraft.giveResource]: Number(state.tradeDraft.giveAmount) },
-          receive: { [state.tradeDraft.receiveResource]: Number(state.tradeDraft.receiveAmount) }
-        };
-        send("proposeTrade", payload);
-      }
-    });
   }
 
   return options;
@@ -1083,10 +1271,10 @@ function renderTradePanel(gameState) {
 
 function renderBuildCostsPanel() {
   const costRows = [
-    { label: "Trail", cost: BUILD_COSTS.trail },
+    { label: "Road", cost: BUILD_COSTS.trail },
     { label: "Cottage", cost: BUILD_COSTS.cottage },
     { label: "Manor", cost: BUILD_COSTS.manor },
-    { label: "Dev Card", cost: BUILD_COSTS.dev_card }
+    { label: "Development Card", cost: BUILD_COSTS.dev_card }
   ];
 
   return `
@@ -1161,13 +1349,12 @@ function renderDevPanel(gameState) {
   }
 
   const canPlay = gameState.legalActions.includes("playDevCard");
-  const canBuy = gameState.legalActions.includes("buyDevCard");
 
   return `
     <div class="section panel">
       <h3>Development Cards</h3>
       <div class="inline-row">
-        <button id="buy-dev-card" ${canBuy ? "" : "disabled"}>Buy Dev Card</button>
+        <button id="buy-dev-card">Buy Development Card</button>
       </div>
       <div style="margin-top:8px;">
         ${(me.devCards || [])
@@ -1297,13 +1484,14 @@ function bindBoardInteractions(gs) {
     return;
   }
 
-  const canAct = gs.turn?.activePlayerId === state.playerId || gs.phase === "setup";
+  const canAct = gs.phase === "setup" ? gs.setup?.currentStep?.playerId === state.playerId : gs.turn?.activePlayerId === state.playerId;
 
   if (canAct) {
     document.querySelectorAll("[data-edge-id]").forEach((element) => {
       element.addEventListener("click", () => {
         const edgeId = element.getAttribute("data-edge-id");
         if (!(gs.fastBuildTargets?.trails || []).includes(edgeId)) {
+          showActionMessage("Road placement is not legal on that edge.");
           return;
         }
         state.pendingPlacement = { type: "trail", edgeId };
@@ -1323,6 +1511,8 @@ function bindBoardInteractions(gs) {
         } else if (canUpgrade) {
           state.pendingPlacement = { type: "manor", intersectionId };
           render();
+        } else {
+          showActionMessage("You cannot place a Cottage or Manor on that intersection.");
         }
       });
     });
@@ -1343,7 +1533,7 @@ function bindBoardInteractions(gs) {
   }
 }
 
-function bindGamePanelInteractions(_gs) {
+function bindGamePanelInteractions(gs) {
   const confirmPlacement = document.getElementById("confirm-placement");
   const cancelPlacement = document.getElementById("cancel-placement");
   const cancelDevPlay = document.getElementById("cancel-dev-play");
@@ -1378,13 +1568,7 @@ function bindGamePanelInteractions(_gs) {
 
   const submitTrade = document.getElementById("submit-trade");
   submitTrade?.addEventListener("click", () => {
-    syncTradeDraftFromDom();
-    send("proposeTrade", {
-      roomId: state.roomId,
-      toPlayerId: state.tradeDraft.toPlayerId || null,
-      give: { [state.tradeDraft.giveResource]: Number(state.tradeDraft.giveAmount) },
-      receive: { [state.tradeDraft.receiveResource]: Number(state.tradeDraft.receiveAmount) }
-    });
+    attemptPostTradeOffer(gs);
   });
 
   document.querySelectorAll("[data-accept-trade]").forEach((button) => {
@@ -1401,13 +1585,7 @@ function bindGamePanelInteractions(_gs) {
 
   const doBankTrade = document.getElementById("do-bank-trade");
   doBankTrade?.addEventListener("click", () => {
-    syncBankDraftFromDom();
-    send("bankTrade", {
-      roomId: state.roomId,
-      giveResource: state.bankDraft.giveResource,
-      receiveResource: state.bankDraft.receiveResource,
-      receiveAmount: Number(state.bankDraft.receiveAmount)
-    });
+    attemptBankTrade(gs);
   });
 
   document.querySelectorAll("[data-bank-template]").forEach((button) => {
@@ -1422,7 +1600,7 @@ function bindGamePanelInteractions(_gs) {
 
   const buyDev = document.getElementById("buy-dev-card");
   buyDev?.addEventListener("click", () => {
-    send("buyDevCard", { roomId: state.roomId });
+    attemptBuyDevCard(gs);
   });
 
   document.querySelectorAll("[data-play-card]").forEach((button) => {

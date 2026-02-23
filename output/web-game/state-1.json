@@ -1,1 +1,1 @@
-{"coordinate_system":"SVG viewBox with +x right and +y down","mode":"lobby","room_id":"r_d18d54a6","active_player_id":null,"turn_number":0,"legal_actions":[],"pending_placement":null,"me":null,"players":[],"pending_trade_count":0,"log_tail":[]}
+{"coordinate_system":"SVG viewBox with +x right and +y down","mode":"lobby","room_id":null,"active_player_id":null,"turn_number":0,"last_roll":null,"legal_actions":[],"setup_step":null,"pending_placement":null,"market_summary":{"total":0,"ratio_2_to_1":0,"ratio_3_to_1":0},"me":null,"players":[],"pending_trade_count":0,"log_tail":[]}

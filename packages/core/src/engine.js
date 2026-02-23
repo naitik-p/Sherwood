@@ -843,6 +843,11 @@ export function playDevCard(state, playerId, payload, ts = Date.now()) {
 }
 
 export function proposeTrade(state, playerId, payload, ts = Date.now()) {
+  ensureMainActionTurn(state, playerId);
+  if (!state.turn.rolled) {
+    throw new Error("Roll dice before posting a trade offer");
+  }
+
   const fromPlayer = getPlayer(state, playerId);
   const give = validateTradeBag(payload.give, "Trade give");
   const receive = validateTradeBag(payload.receive, "Trade receive");
@@ -1069,11 +1074,11 @@ export function getLegalActions(state, playerId) {
 
   const activeId = getActivePlayerId(state);
   if (activeId !== playerId) {
-    return ["proposeTrade", "acceptTrade", "declineTrade"];
+    return ["acceptTrade", "declineTrade"];
   }
 
   if (!state.turn.rolled) {
-    return ["rollDice", "proposeTrade", "acceptTrade", "declineTrade"];
+    return ["rollDice", "acceptTrade", "declineTrade"];
   }
 
   return [

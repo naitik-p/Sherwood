@@ -240,7 +240,7 @@ async function run() {
       }
 
       if (turnCounts[activeId] >= 3) {
-        await clickOption(activePage, 'Roll 2d6');
+        await clickOption(activePage, 'Roll Dice');
         await sleep(100);
         await clickOption(activePage, 'End Turn');
         await hostPage.waitForFunction(
@@ -263,7 +263,7 @@ async function run() {
         preRollEndTurnRuleChecks.push(Boolean(toast && /roll/i.test(toast)));
       }
 
-      await clickOption(activePage, 'Roll 2d6');
+      await clickOption(activePage, 'Roll Dice');
       await activePage.waitForFunction(() => {
         const s = JSON.parse(window.render_game_to_text());
         return Number.isFinite(s.last_roll);

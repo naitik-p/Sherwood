@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "roomId": "r_aadc8169",
+  "optionLabels": [
+    "1 Roll Dice",
+    "2 Build Road",
+    "3 Build Cottage",
+    "4 Build Manor",
+    "5 Buy Development Card",
+    "6 Post Trade Offer",
+    "7 Trade with Bazaar",
+    "8 End Turn"
+  ],
+  "checks": {
+    "preRollManorBlocked": true,
+    "preRollDevBlocked": true,
+    "postRollManorBlockedByRules": true,
+    "postRollDevBlockedByResources": true,
+    "invalidTradeBlocked": true
+  },
+  "errors": {
+    "preRollManorError": "Roll the dice before taking that action.",
+    "preRollDevError": "Roll the dice before taking that action.",
+    "postRollManorError": "Not enough resources for Manor. Missing: 1 Harvest, 3 Iron.",
+    "postRollDevError": "Not enough resources for a development card. Missing: 1 Iron.",
+    "postTradeError": "You do not have enough Timber for that offer."
+  },
+  "meta": {
+    "buyAttempts": 0
+  }
+}
