@@ -151,3 +151,33 @@ Original prompt: Build a cozy cottagecore medieval 2D real-time multiplayer brow
   - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-pass-summary.json`
   - `/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback.png`
   - `/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback-summary.json`
+
+## 2026-02-23 (6-turn retest)
+- Added full 4-player 6-turn gameplay retest harness: `output/four_player_6turn_full_retest.mjs`.
+  - Includes lobby+admit+ready+start+vote+full setup automation.
+  - Added deterministic setup planning via core engine seed replay to improve early-turn resource outcomes.
+  - Exercises player-to-player trade posting + acceptance and market/bank trade attempts.
+  - Attempts road and cottage builds in main phase under legal action flow.
+  - Captures end-of-run screenshot and writes machine-readable summary.
+- Execution run (with escalated browser permission) produced exhaustive retries:
+  - 8 independent full 6-turn attempts completed.
+  - In all attempts: 6 turns completed; player trade acceptance succeeded; road build succeeded at least once.
+  - Some attempts: bank trade completed successfully.
+  - No attempt produced a legal main-phase cottage build inside the strict 6-turn window.
+- Artifacts from latest run:
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png`
+  - `/Users/Naitik/Python/Shorewood/output/web-game/four-player-6turn-retest-summary.json`
+- Current conclusion from automated evidence:
+  - Under current economy/placement flow, a strict 6-turn window appears too short/inconsistent to reliably reach a new cottage build, even with aggressive trade orchestration.
+  - Trade and road functionality are working in this window; cottage build likely requires either longer horizon or adjusted economy/setup targeting.
+
+## 2026-02-23 (options visibility + Supabase verification)
+- Re-verified options visibility with active-turn capture.
+  - `output/turn_option_feedback_check.mjs` now captures two screenshots:
+    - `turn-option-visible-active-turn.png` (captured while active player's turn; options list visible)
+    - `turn-option-feedback-active-player.png` (captured later in flow; options can be blank when it is no longer that player's turn)
+  - Automated check confirms expected option labels are present in DOM for active turn.
+- Verified Supabase env wiring behavior:
+  - Root `.env` contains `DATABASE_URL` pointing to Supabase host.
+  - Running from `apps/server` without `DOTENV_CONFIG_PATH` leaves `DATABASE_URL` unset (server falls back to memory mode).
+  - Forcing root env load (`DOTENV_CONFIG_PATH=../../.env`) makes server attempt Supabase connection, but current runtime returns `EHOSTUNREACH` to Supabase DB endpoint.

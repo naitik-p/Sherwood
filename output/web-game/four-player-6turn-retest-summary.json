@@ -1,0 +1,662 @@
+{
+  "ok": false,
+  "message": "No attempt met all requirements after 8 runs",
+  "attempts": [
+    {
+      "attempt": 1,
+      "roomId": "r_597cf59b",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 7,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 4,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_c54f0194df1546bfab7f48e27e2b193a",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_d23d47468a29413a8ebf2d9d5fb28990",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_839e86ae6cab46eabf835eaaaff59c81",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_91d22a210ee2475f947aed1c8cd5019f",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_c54f0194df1546bfab7f48e27e2b193a",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_d23d47468a29413a8ebf2d9d5fb28990",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    },
+    {
+      "attempt": 2,
+      "roomId": "r_aac43fcc",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 10,
+      "bankTradesCompleted": 1,
+      "devCardsBought": 0,
+      "uniqueRollCount": 6,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_a1523bd9e41d4e1c8abad70b75c68115",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_258d78c4b5e84831a78208dd2803ccfc",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_232e3ab1e3ec41d2926134548c583550",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_770f6e2d2e17454fb5e7b4c04ce68902",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_a1523bd9e41d4e1c8abad70b75c68115",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_258d78c4b5e84831a78208dd2803ccfc",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": true,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": true
+      },
+      "ok": false
+    },
+    {
+      "attempt": 3,
+      "roomId": "r_2d7f4aaf",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 10,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 4,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_240723d18be8408ca705c7e46147bd4c",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_c48ebe31c3e14f73a709e83fb7e7ce56",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_82a76d564ad84131b2eb8b1b1ca1a872",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_f1c10554506541de932407ddae1998e2",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_240723d18be8408ca705c7e46147bd4c",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_c48ebe31c3e14f73a709e83fb7e7ce56",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    },
+    {
+      "attempt": 4,
+      "roomId": "r_b89c33b5",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 6,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 5,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_1fa77c67d8244d29972248d12f274afb",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_2abf3b6302df4330b7ccbe4e66fe12e7",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_9e67e92f3e20449c8b3f1c6618fde717",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_3df8f6bbe1db4fe2b9a9b1ccec56cf27",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_1fa77c67d8244d29972248d12f274afb",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_2abf3b6302df4330b7ccbe4e66fe12e7",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    },
+    {
+      "attempt": 5,
+      "roomId": "r_79489c26",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 8,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 5,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_a1e4577bf3e6450f9e2082abad12c78f",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_940df4e986fc46378ba5de6487120621",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_8994c696db154b50819c2afa987ca627",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_1182155059fe49b38952c0681dc73d1e",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_a1e4577bf3e6450f9e2082abad12c78f",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_940df4e986fc46378ba5de6487120621",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    },
+    {
+      "attempt": 6,
+      "roomId": "r_2583590d",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 8,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 5,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_5663c898bef5471fb7138c9e44ed9db5",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_466b3cae5a774eceb3d21c025165649d",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_9aeaef7d58b046ee9463c46ae93d6eff",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_3c4e5f45af1f40d58d917db93f6fa0ed",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_5663c898bef5471fb7138c9e44ed9db5",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_466b3cae5a774eceb3d21c025165649d",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    },
+    {
+      "attempt": 7,
+      "roomId": "r_325f90ab",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 10,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 3,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_8a896443c6164a1eb56ee3b31a924499",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_0c09712afb8a46b8b2042c953260a2fe",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_062854a1a9c2487b91bbe065a39e8875",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_d09fddb17a9042b09a818b38b508d82a",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_8a896443c6164a1eb56ee3b31a924499",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_0c09712afb8a46b8b2042c953260a2fe",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    },
+    {
+      "attempt": 8,
+      "roomId": "r_2c3bd05a",
+      "turnsCompleted": 6,
+      "trailsBuilt": 1,
+      "cottagesBuilt": 0,
+      "playerTradesAccepted": 6,
+      "bankTradesCompleted": 0,
+      "devCardsBought": 0,
+      "uniqueRollCount": 6,
+      "perTurn": [
+        {
+          "turnNumber": 1,
+          "activePlayerId": "ply_ad32cec29c294010927b6679c1f63176",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 2,
+          "activePlayerId": "ply_7b3f964226dc48b2ac42acf565540431",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 3,
+          "activePlayerId": "ply_44f426afabdf4049b364899554addfbc",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 4,
+          "activePlayerId": "ply_a0e5fb14b272447a9c6fcdf607ecb906",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": true,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 5,
+          "activePlayerId": "ply_ad32cec29c294010927b6679c1f63176",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        },
+        {
+          "turnNumber": 6,
+          "activePlayerId": "ply_7b3f964226dc48b2ac42acf565540431",
+          "rolled": true,
+          "tradeAccepted": true,
+          "cottageBuilt": false,
+          "trailBuilt": false,
+          "bankTradeCompleted": false,
+          "devBought": false
+        }
+      ],
+      "screenshotPath": "/Users/Naitik/Python/Shorewood/output/web-game/four-player-after-6-turns.png",
+      "requirementChecks": {
+        "sixTurnsCompleted": true,
+        "builtTrail": true,
+        "builtCottage": false,
+        "playerTradeAccepted": true,
+        "bankTradeCompleted": false
+      },
+      "ok": false
+    }
+  ]
+}

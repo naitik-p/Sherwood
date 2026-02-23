@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "roomId": "r_aadc8169",
+  "roomId": "r_4ea0d348",
   "optionLabels": [
     "1 Roll Dice",
     "2 Build Road",
@@ -21,7 +21,7 @@
   "errors": {
     "preRollManorError": "Roll the dice before taking that action.",
     "preRollDevError": "Roll the dice before taking that action.",
-    "postRollManorError": "Not enough resources for Manor. Missing: 1 Harvest, 3 Iron.",
+    "postRollManorError": "Not enough resources for Manor. Missing: 3 Iron.",
     "postRollDevError": "Not enough resources for a development card. Missing: 1 Iron.",
     "postTradeError": "You do not have enough Timber for that offer."
   },

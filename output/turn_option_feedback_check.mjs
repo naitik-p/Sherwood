@@ -197,6 +197,10 @@ async function run() {
         throw new Error(`Missing turn option: ${label}`);
       }
     }
+    await activePage.screenshot({
+      path: "/Users/Naitik/Python/Shorewood/output/web-game/turn-option-visible-active-turn.png",
+      fullPage: true
+    });
 
     await clickOption(activePage, "Build Manor");
     await sleep(140);
@@ -269,6 +273,7 @@ async function run() {
 
     fs.writeFileSync("/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback-summary.json", JSON.stringify(summary, null, 2));
     await hostPage.screenshot({ path: "/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback.png", fullPage: true });
+    await activePage.screenshot({ path: "/Users/Naitik/Python/Shorewood/output/web-game/turn-option-feedback-active-player.png", fullPage: true });
 
     if (!Object.values(summary.checks).every(Boolean)) {
       throw new Error(`Feedback checks failed: ${JSON.stringify(summary.checks)}`);
