@@ -5,22 +5,50 @@
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Players get a faithful Catan experience under Shorewood's custom skin — same board, same robber, same setup rules.
-**Current focus:** Milestone v1.0 — not started
+**Current focus:** Phase 1 — Port Layout
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-09 — Milestone v1.0 started
+Phase: 1 of 4 (Port Layout)
+Plan: — of — in current phase
+Status: Ready to plan
+Last activity: 2026-04-09 — Roadmap created, ready to plan Phase 1
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+- Average duration: —
+- Total execution time: —
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
-- Existing codebase fully functional: lobby, setup, main game loop, trading, dev cards, WebSocket multiplayer
-- All game rules in `packages/core/src/engine.js` and `packages/core/src/board.js`
-- 12 passing unit tests in `packages/core/test/engine.test.js`
-- Port layout: currently random via `chooseStallIntersections()` in board.js
-- No robber state exists anywhere in the codebase
-- Frost mechanic (roll 2) is the only hex-blocking mechanic currently
-- Client uses vanilla JS + Vite in `apps/client/src/main.js`
-- Server uses Express + WS in `apps/server/src/index.js`
+### Decisions
+
+- Fixed port layout chosen over random — matches standard Catan board, reproducible across games
+- Frost mechanic (roll 2) kept alongside robber — user preference
+- No Longest Road / Largest Army — user explicitly excluded
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-04-09
+Stopped at: Roadmap written — no plans created yet
+Resume file: None
