@@ -2,11 +2,23 @@
 
 ## What This Is
 
-Shorewood is a browser-based multiplayer board game in the style of Settlers of Catan. It uses a hex grid, custom resource/structure theming (trails, cottages, manors, timber, clay, etc.), and real-time WebSocket play. This initiative aligns the core gameplay rules and board layout with the standard Catan ruleset.
+Shorewood is a browser-based multiplayer board game in the style of Settlers of Catan. It uses a hex grid, custom resource/structure theming (trails, cottages, manors, timber, clay, etc.), and real-time WebSocket play. This milestone aligns the core gameplay rules and board layout with the standard Catan ruleset.
 
 ## Core Value
 
 Players get a faithful Catan experience under Shorewood's custom skin — same board, same robber, same setup rules.
+
+## Current Milestone: v1.0 Catan Rules Alignment
+
+**Goal:** Align Shorewood's gameplay with standard Catan rules by adding the robber mechanic and fixing port layout.
+
+**Target features:**
+- Fixed Catan-standard port layout (9 ports at predetermined coastal positions)
+- Second setup placement grants resources (collect from adjacent hexes)
+- Robber state tracked in game (starts on desert/wild_heath)
+- Roll 7 triggers discard + robber move sequence
+- Robber move action (active player picks hex, blocks production)
+- Steal action after robber placement (steal from adjacent player)
 
 ## Requirements
 
@@ -43,23 +55,24 @@ Players get a faithful Catan experience under Shorewood's custom skin — same b
 - Monorepo: `packages/core` (pure game engine, zero deps), `apps/server` (Express + WS), `apps/client` (vanilla JS + Vite)
 - All game rules live in `packages/core/src/engine.js` and `board.js`
 - Board generation is in `packages/core/src/board.js` — port assignment currently uses `chooseStallIntersections()` which picks random coastal intersection indices, not fixed Catan positions
-- Setup resource grant is in `engine.js` — current code grants resources only at second placement round but logic needs verification; the `setup.queue` tracks snake-draft order
+- Setup resource grant currently runs on both placements; second-placement grant needs to match standard Catan (adjacent hex resources only)
 - No robber state exists anywhere in the codebase; frost (roll=2) is the only hex-blocking mechanic
+- 12 existing unit tests in `packages/core/test/engine.test.js` must remain passing
 
 ## Constraints
 
 - **Tech Stack**: JavaScript/ESM only — no TypeScript, no new runtime dependencies
-- **Scope**: Engine changes only — server and client will need updates to support new actions/state but no architectural changes
-- **Compatibility**: All existing tests must pass; new mechanics need new test coverage in `packages/core`
+- **Scope**: Engine changes primary — server and client updated for new state/actions, no architectural changes
+- **Compatibility**: All existing tests must pass; new mechanics need new test coverage
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Keep custom theme (trails/cottages etc.) | User preference — rules alignment, not reskin | — Pending |
-| Keep frost mechanic alongside robber | User preference — frost on roll 2 stays | — Pending |
+| Keep custom theme (trails/cottages etc.) | User preference — rules alignment, not reskin | ✓ Good |
+| Keep frost mechanic alongside robber | User preference — frost on roll 2 stays | ✓ Good |
 | Fixed port layout over random | Matches standard Catan board; reproducible across games | — Pending |
-| No Longest Road / Largest Army | User explicitly excluded | — Pending |
+| No Longest Road / Largest Army | User explicitly excluded | ✓ Good |
 
 ## Evolution
 
@@ -79,4 +92,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-08 after initialization*
+*Last updated: 2026-04-09 after milestone v1.0 initialization*
