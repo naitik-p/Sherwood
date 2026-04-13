@@ -28,7 +28,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Five specific 2:1 ports appear — one for each resource type (timber, clay, wool, harvest, iron)
   3. Four generic 3:1 ports appear at the remaining coastal positions
   4. Port positions do not change between game sessions or page reloads
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 01-01-PLAN.md — Replace random port assignment with fixed Catan layout (BOARD-01)
 
 ### Phase 2: Setup Resources
 **Goal**: Players receive the correct resource grant after placing their second setup cottage
