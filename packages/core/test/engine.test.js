@@ -358,7 +358,7 @@ describe("engine rules", () => {
     rollDice(state, "p2", 3_002, rngForDice(3, 3));
     endTurn(state, "p2", 3_003);
 
-    rollDice(state, "p1", 3_004, rngForDice(3, 4));
+    rollDice(state, "p1", 3_004, rngForDice(4, 4));
     endTurn(state, "p1", 3_005);
 
     expect(roller.frostEffects.length).toBe(0);
@@ -482,6 +482,28 @@ describe("engine rules", () => {
       const activePlayerId = state.turn.order[state.turn.index];
       const { roll } = rollDice(state, activePlayerId, 6_000 + i);
       rolls.push(roll);
+      // Drain Roll 7 pending state so endTurn doesn't throw
+      if (state.turn.pendingDiscards) {
+        for (const pid of Object.keys(state.turn.pendingDiscards.required)) {
+          const required = state.turn.pendingDiscards.required[pid];
+          const bag = { timber: 0, clay: 0, wool: 0, harvest: 0, iron: 0 };
+          let remaining = required;
+          for (const [res, count] of Object.entries(state.players[pid].resources)) {
+            const take = Math.min(count, remaining);
+            bag[res] = take;
+            remaining -= take;
+            if (remaining === 0) break;
+          }
+          submitDiscard(state, pid, bag, 6_200 + i);
+        }
+      }
+      if (state.turn.pendingRobberMove) {
+        const target = state.board.hexes.find((h) => h.terrainId !== "wild_heath" && h.id !== state.robberHexId);
+        moveRobber(state, activePlayerId, target.id, 6_300 + i);
+        if (state.turn.pendingSteal) {
+          resolveSteal(state, activePlayerId, 6_400 + i, () => 0);
+        }
+      }
       endTurn(state, activePlayerId, 6_100 + i);
     }
 
