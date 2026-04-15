@@ -5,7 +5,7 @@ import {
   FIXED_STALL_COORDS,
   TERRAINS
 } from "./constants.js";
-import { assert, randomInt, shuffle } from "./utils.js";
+import { assert, shuffle } from "./utils.js";
 
 const SQRT3 = Math.sqrt(3);
 const HEX_DIRECTIONS = [
@@ -266,7 +266,8 @@ export function createBoard({ rng = Math.random, hexSize = 84 } = {}) {
   }
 
   const stallNodes = chooseStallIntersections(intersections);
-  for (let i = 0; i < 9; i += 1) {
+  assert(stallNodes.length === BAZAAR_STALLS_ORDERED.length, "stall node count must match BAZAAR_STALLS_ORDERED length");
+  for (let i = 0; i < stallNodes.length; i += 1) {
     stallNodes[i].stall = {
       id: `stall_${i + 1}`,
       ...BAZAAR_STALLS_ORDERED[i]
