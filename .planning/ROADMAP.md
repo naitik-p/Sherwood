@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Port Layout** - Replace random port assignment with fixed Catan-standard layout (completed 2026-04-15)
 - [x] **Phase 2: Setup Resources** - Second cottage placement grants adjacent hex resources (completed 2026-04-15)
 - [x] **Phase 3: Robber State** - Add robber to game state; robber blocks hex production (completed 2026-04-15)
-- [ ] **Phase 4: Roll 7 Sequence** - Full Roll 7 flow: discard, move robber, steal
+- [x] **Phase 4: Roll 7 Sequence** - Full Roll 7 flow: discard, move robber, steal (completed 2026-04-15)
 
 ## Phase Details
 
@@ -70,7 +70,7 @@ Plans:
   5. If no eligible adjacent player exists, steal is skipped and play continues
 **Plans**: 1 plan
 Plans:
-- [ ] 04-01-PLAN.md — TDD: submitDiscard, moveRobber, resolveSteal — full Roll 7 sequence (ROLL7-01, ROLL7-02, ROLL7-03)
+- [x] 04-01-PLAN.md — TDD: submitDiscard, moveRobber, resolveSteal — full Roll 7 sequence (ROLL7-01, ROLL7-02, ROLL7-03)
 
 ## Progress
 
@@ -82,4 +82,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Port Layout | 1/1 | Complete   | 2026-04-15 |
 | 2. Setup Resources | 1/1 | Complete     | 2026-04-15 |
 | 3. Robber State | 1/1 | Complete     | 2026-04-15 |
-| 4. Roll 7 Sequence | 0/1 | Not started | - |
+| 4. Roll 7 Sequence | 1/1 | Complete     | 2026-04-15 |
