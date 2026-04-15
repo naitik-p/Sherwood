@@ -543,4 +543,45 @@ describe("engine rules", () => {
     endTurn(state, activePlayerId, 7_003);
     expect(state.turn.order[state.turn.index]).not.toBe(activePlayerId);
   });
+
+  describe("robber state", () => {
+    test("ROBBER-01: createGameState initializes robberHexId to the wild_heath hex", () => {
+      const state = createMatch();
+      const wildHeathHex = state.board.hexes.find((h) => h.terrainId === "wild_heath");
+      expect(wildHeathHex).toBeDefined();
+      expect(state.robberHexId).toBe(wildHeathHex.id);
+    });
+
+    test("ROBBER-02: rolling the robber hex token produces nothing; other hexes produce normally", () => {
+      const state = createMatch();
+      forceVoteToFirstToTen(state);
+      completeSnakeSetup(state);
+      resetPlayersAndStructures(state);
+
+      // Pick a producing hex to park the robber on (token !== 2 avoids frost early-return)
+      const robberHex = state.board.hexes.find((h) => h.resource && h.token && h.token !== 2);
+      state.robberHexId = robberHex.id;
+
+      // Place p1 cottage on the robber hex — should receive nothing when rolled
+      const blockedIx = robberHex.intersectionIds[0];
+      state.structures.intersections[blockedIx] = { ownerId: "p1", type: "cottage" };
+      state.players.p1.cottages = [blockedIx];
+
+      const [d1, d2] = pickDiceForTotal(robberHex.token);
+      rollDice(state, "p1", 4_000, rngForDice(d1, d2));
+
+      expect(state.players.p1.resources[robberHex.resource]).toBe(0);
+
+      // Now move robber away and verify the same hex produces normally
+      const otherHex = state.board.hexes.find((h) => h.resource && h.token && h.token !== 2 && h.id !== robberHex.id);
+      state.robberHexId = otherHex.id;
+
+      endTurn(state, "p1", 4_001);
+
+      const [d3, d4] = pickDiceForTotal(robberHex.token);
+      rollDice(state, "p2", 4_002, rngForDice(d3, d4));
+
+      expect(state.players.p1.resources[robberHex.resource]).toBe(1);
+    });
+  });
 });
