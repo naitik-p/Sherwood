@@ -54,7 +54,9 @@ Plans:
   2. Rolling a number that matches the robber's hex produces nothing for any player on that hex
   3. Non-robber hexes continue to produce resources normally
   4. Frost mechanic (roll 2) continues to work alongside robber blocking
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 03-01-PLAN.md — TDD: initialize robberHexId and block production on robber hex (ROBBER-01, ROBBER-02)
 
 ### Phase 4: Roll 7 Sequence
 **Goal**: Rolling a 7 triggers the full Catan sequence — discard, move robber, steal
@@ -77,5 +79,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Port Layout | 1/1 | Complete   | 2026-04-15 |
 | 2. Setup Resources | 1/1 | Complete     | 2026-04-15 |
-| 3. Robber State | 0/? | Not started | - |
+| 3. Robber State | 0/1 | Not started | - |
 | 4. Roll 7 Sequence | 0/? | Not started | - |
