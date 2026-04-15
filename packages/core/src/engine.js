@@ -669,7 +669,10 @@ export function buildCottage(state, playerId, intersectionId, ts = Date.now()) {
 
   if (state.phase === "setup") {
     state.setup.mustTrailFrom = intersectionId;
-    grantSetupPlacementResources(state, player, intersectionId, ts);
+    const step = currentSetupStep(state);
+    if (step.round === 2) {
+      grantSetupPlacementResources(state, player, intersectionId, ts);
+    }
     advanceSetupPointer(state, ts);
   }
 

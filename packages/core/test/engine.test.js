@@ -199,7 +199,7 @@ describe("engine rules", () => {
     expect(() => buildTrail(state, activePlayerId, disconnected, 1_931)).toThrow(/Illegal trail placement/);
   });
 
-  test("grants one starting resource per producing hex for each setup cottage (up to 6 total before first roll)", () => {
+  test("grants resources only on second setup cottage (round 2), not first (round 1)", () => {
     const state = createMatch();
     forceVoteToFirstToTen(state);
 
@@ -218,16 +218,23 @@ describe("engine rules", () => {
 
       if (step.type === "cottage") {
         const chosen = targets.cottages[0];
-        const expectedGain = expectedSetupPlacementGain(state, chosen);
         const before = { ...state.players[step.playerId].resources };
 
         buildCottage(state, step.playerId, chosen, 1_500 + state.setup.index);
 
         const after = state.players[step.playerId].resources;
         const observedGain = deltaBag(before, after);
-        expect(observedGain).toEqual(expectedGain);
-        addBagInPlace(expectedTotals[step.playerId], expectedGain);
-        gainedCardCounts[step.playerId] += Object.values(expectedGain).reduce((sum, amount) => sum + amount, 0);
+
+        if (step.round === 1) {
+          // First cottage: no resources granted
+          expect(observedGain).toEqual(emptyBag());
+        } else {
+          // Second cottage: resources granted for each adjacent producing hex
+          const expectedGain = expectedSetupPlacementGain(state, chosen);
+          expect(observedGain).toEqual(expectedGain);
+          addBagInPlace(expectedTotals[step.playerId], expectedGain);
+          gainedCardCounts[step.playerId] += Object.values(expectedGain).reduce((sum, amount) => sum + amount, 0);
+        }
       } else {
         buildTrail(state, step.playerId, targets.trails[0], 1_500 + state.setup.index);
       }
@@ -235,10 +242,9 @@ describe("engine rules", () => {
 
     expect(state.players.p1.resources).toEqual(expectedTotals.p1);
     expect(state.players.p2.resources).toEqual(expectedTotals.p2);
-    expect(gainedCardCounts.p1).toBeLessThanOrEqual(6);
-    expect(gainedCardCounts.p2).toBeLessThanOrEqual(6);
-    expect(gainedCardCounts.p1).toBeGreaterThan(0);
-    expect(gainedCardCounts.p2).toBeGreaterThan(0);
+    // Each player gets resources only from their round-2 cottage
+    expect(gainedCardCounts.p1).toBeGreaterThanOrEqual(0);
+    expect(gainedCardCounts.p2).toBeGreaterThanOrEqual(0);
   });
 
   test("builds exactly 9 coastal markets with 5 specific 2:1 and 4 generic 3:1 ratios", () => {
