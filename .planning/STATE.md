@@ -1,83 +1,64 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Catan Rules Alignment
+status: executing
+last_updated: "2026-04-15"
+last_activity: 2026-04-15 -- Phase 1 complete (BOARD-01 verified)
+progress:
+  total_phases: 4
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 25
+---
+
 # STATE — Shorewood Catan Rules Alignment
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-09)
+See: .planning/PROJECT.md
 
 **Core value:** Players get a faithful Catan experience under Shorewood's custom skin — same board, same robber, same setup rules.
-**Current focus:** Phase 1 — Port Layout (ready to plan)
+**Current focus:** Phase 2 — Setup Resources
 
 ## Current Position
 
-Phase: 1 of 4 (Port Layout)
-Plan: Not started — research complete, planning next
-Status: Paused — awaiting resume
-Last activity: 2026-04-09 — Phase 1 research + validation strategy complete; planning not yet started
+Phase: 2 of 4 (Setup Resources) — Ready to plan
+Status: Phase 1 complete, Phase 2 next
+Last activity: 2026-04-15 — Phase 1 (Port Layout) complete, BOARD-01 verified
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 25%
 
-## What Was Completed This Session
+## Completed Phases
 
-### Milestone Initialization
-- Created `.planning/PROJECT.md` — milestone v1.0 goals, requirements, constraints
-- Created `.planning/STATE.md` — session continuity
-- Created `.planning/REQUIREMENTS.md` — 7 requirements across 3 groups (BOARD-01/02, ROBBER-01/02, ROLL7-01/02/03)
-- Created `.planning/ROADMAP.md` — 4-phase plan (Port Layout → Setup Resources → Robber State → Roll 7 Sequence)
-
-### Phase 1: Port Layout — Pre-Planning Artifacts
-- Created `01-CONTEXT.md` — implementation decisions (yolo auto-generated)
-- Created `01-RESEARCH.md` — full technical research on board.js geometry, coordKey system, stall assignment, pitfalls
-- Created `01-VALIDATION.md` — Nyquist test strategy (vitest, per-commit sampling, gate criteria)
-
-### Research Findings (Phase 1)
-- `chooseStallIntersections()` in `board.js:146` is the sole function to replace
-- Current code uses randomized angular sampling + `shuffle(BAZAAR_STALLS, rng)` — both must go
-- Replacement: fixed `(x, y)` coordinate array looked up via `coordKey()` (3dp rounding)
-- Wave 0 must compute the 9 exact coordinate pairs via a one-shot derivation script
-- All 12 existing tests will stay green; 1 new positional determinism test needed
-- Clockwise port order (locked): wool(2:1), generic(3:1), timber(2:1), generic(3:1), harvest(2:1), iron(2:1), generic(3:1), clay(2:1), generic(3:1)
+### Phase 1: Port Layout ✅ (2026-04-15)
+- Requirement: BOARD-01 — satisfied
+- `FIXED_STALL_COORDS` (9 clockwise [x,y] pairs at hexSize=84) in constants.js
+- `BAZAAR_STALLS_ORDERED` (wool, generic, timber, generic, harvest, iron, generic, clay, generic) in constants.js
+- `chooseStallIntersections()` deterministic — rng removed
+- `shuffle(BAZAAR_STALLS, rng)` removed from `createBoard()`
+- New derivation script: `packages/core/scripts/derive-stall-coords.mjs`
+- 13/13 tests pass | build green | determinism probe confirms identical positions across calls
 
 ## What Remains
 
 | Phase | Status | Next Action |
 |-------|--------|-------------|
-| 1 — Port Layout | Research done, planning not started | Run `/gsd-plan-phase 1` then `/gsd-execute-phase 1` |
-| 2 — Setup Resources | Not started | After Phase 1 completes |
+| 2 — Setup Resources | Not started | Auto-generate context → plan → execute |
 | 3 — Robber State | Not started | After Phase 2 completes |
 | 4 — Roll 7 Sequence | Not started | After Phase 3 completes |
-
-## How to Resume
-
-Resume the autonomous run from where it left off:
-
-```
-/gsd-autonomous --from 1
-```
-
-This will pick up at Phase 1 planning (CONTEXT.md and RESEARCH.md already exist — will skip directly to planner).
 
 ## Accumulated Context
 
 ### Decisions
 
-- Fixed port layout chosen over random — matches standard Catan board, reproducible across games
+- Fixed port layout: `FIXED_STALL_COORDS` derived at hexSize=84, evenly-spaced clockwise ring (30 coastal nodes, indices 0,3,7,10,13,17,20,23,27)
 - Frost mechanic (roll 2) kept alongside robber — user preference
 - No Longest Road / Largest Army — user explicitly excluded
 - Yolo autonomous mode — all implementation choices at Claude's discretion
-
-### Pending Todos
-
-- [ ] Phase 1: Run `/gsd-plan-phase 1` (research already done)
-- [ ] Phase 2: Full plan+execute cycle
-- [ ] Phase 3: Full plan+execute cycle
-- [ ] Phase 4: Full plan+execute cycle
+- JS/ESM only, no new runtime dependencies
 
 ### Blockers/Concerns
 
-None — clean start point for planning.
-
-## Session Continuity
-
-Last session: 2026-04-09
-Stopped at: Phase 1 — research + validation complete, about to spawn planner
-Resume command: `/gsd-autonomous --from 1`
+None.

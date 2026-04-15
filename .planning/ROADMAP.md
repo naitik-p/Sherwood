@@ -12,7 +12,7 @@ Four phases align Shorewood with standard Catan rules. Phase 1 fixes the board l
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Port Layout** - Replace random port assignment with fixed Catan-standard layout
+- [x] **Phase 1: Port Layout** - Replace random port assignment with fixed Catan-standard layout (completed 2026-04-15)
 - [ ] **Phase 2: Setup Resources** - Second cottage placement grants adjacent hex resources
 - [ ] **Phase 3: Robber State** - Add robber to game state; robber blocks hex production
 - [ ] **Phase 4: Roll 7 Sequence** - Full Roll 7 flow: discard, move robber, steal
@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Port positions do not change between game sessions or page reloads
 **Plans**: 1 plan
 Plans:
-- [ ] 01-01-PLAN.md — Replace random port assignment with fixed Catan layout (BOARD-01)
+- [x] 01-01-PLAN.md — Replace random port assignment with fixed Catan layout (BOARD-01)
 
 ### Phase 2: Setup Resources
 **Goal**: Players receive the correct resource grant after placing their second setup cottage
@@ -73,7 +73,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Port Layout | 0/? | Not started | - |
+| 1. Port Layout | 1/1 | Complete   | 2026-04-15 |
 | 2. Setup Resources | 0/? | Not started | - |
 | 3. Robber State | 0/? | Not started | - |
 | 4. Roll 7 Sequence | 0/? | Not started | - |
