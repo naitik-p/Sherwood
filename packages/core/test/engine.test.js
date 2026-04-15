@@ -5,6 +5,7 @@ import {
   buildCottage,
   buildTrail,
   castWinVote,
+  createBoard,
   createInitializedGameState,
   endTurn,
   getFastBuildTargets,
@@ -257,6 +258,39 @@ describe("engine rules", () => {
     expect(generic3to1).toHaveLength(4);
     expect(illegal).toHaveLength(0);
     expect(new Set(specific2to1.map((stall) => stall.resource))).toEqual(new Set(["timber", "clay", "wool", "harvest", "iron"]));
+  });
+
+  test("port positions are identical across two game instances", () => {
+    const a = createBoard({ hexSize: 84 });
+    const b = createBoard({ hexSize: 84 });
+
+    const posA = a.intersections
+      .filter((n) => n.stall)
+      .map((n) => `${n.x},${n.y}`)
+      .sort();
+    const posB = b.intersections
+      .filter((n) => n.stall)
+      .map((n) => `${n.x},${n.y}`)
+      .sort();
+
+    expect(posA).toHaveLength(9);
+    expect(posA).toEqual(posB);
+
+    const mapA = new Map(
+      a.intersections
+        .filter((n) => n.stall)
+        .map((n) => [`${n.x},${n.y}`, `${n.stall.kind}:${n.stall.resource ?? "*"}:${n.stall.ratio}`])
+    );
+    const mapB = new Map(
+      b.intersections
+        .filter((n) => n.stall)
+        .map((n) => [`${n.x},${n.y}`, `${n.stall.kind}:${n.stall.resource ?? "*"}:${n.stall.ratio}`])
+    );
+
+    expect([...mapA.entries()].sort()).toEqual([...mapB.entries()].sort());
+
+    const coastalOnly = a.intersections.filter((n) => n.stall).every((n) => n.coastal);
+    expect(coastalOnly).toBe(true);
   });
 
   test("enforces spacing rule for cottage placement", () => {
