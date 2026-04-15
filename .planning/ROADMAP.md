@@ -40,8 +40,10 @@ Plans:
   1. After the second cottage placement, player's hand increases by one card per adjacent producing hex
   2. Desert/wild_heath adjacency grants no resource (non-producing)
   3. First cottage placement grants no resources (unchanged behavior)
-  4. All 12 existing engine tests continue to pass
-**Plans**: TBD
+  4. All 13 existing engine tests continue to pass
+**Plans**: 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Gate setup resource grant on second placement only (BOARD-02)
 
 ### Phase 3: Robber State
 **Goal**: Robber exists in game state from game start and blocks production on its hex
@@ -74,6 +76,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Port Layout | 1/1 | Complete   | 2026-04-15 |
-| 2. Setup Resources | 0/? | Not started | - |
+| 2. Setup Resources | 0/1 | Not started | - |
 | 3. Robber State | 0/? | Not started | - |
 | 4. Roll 7 Sequence | 0/? | Not started | - |
