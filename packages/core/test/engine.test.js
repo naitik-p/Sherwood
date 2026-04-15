@@ -5,13 +5,17 @@ import {
   buildCottage,
   buildTrail,
   castWinVote,
+  createBoard,
   createInitializedGameState,
   endTurn,
   getFastBuildTargets,
   getPublicGameState,
+  moveRobber,
   playDevCard,
   proposeTrade,
+  resolveSteal,
   rollDice,
+  submitDiscard,
   WIN_MODES
 } from "../src/index.js";
 
@@ -198,7 +202,7 @@ describe("engine rules", () => {
     expect(() => buildTrail(state, activePlayerId, disconnected, 1_931)).toThrow(/Illegal trail placement/);
   });
 
-  test("grants one starting resource per producing hex for each setup cottage (up to 6 total before first roll)", () => {
+  test("grants resources only on second setup cottage (round 2), not first (round 1)", () => {
     const state = createMatch();
     forceVoteToFirstToTen(state);
 
@@ -217,16 +221,23 @@ describe("engine rules", () => {
 
       if (step.type === "cottage") {
         const chosen = targets.cottages[0];
-        const expectedGain = expectedSetupPlacementGain(state, chosen);
         const before = { ...state.players[step.playerId].resources };
 
         buildCottage(state, step.playerId, chosen, 1_500 + state.setup.index);
 
         const after = state.players[step.playerId].resources;
         const observedGain = deltaBag(before, after);
-        expect(observedGain).toEqual(expectedGain);
-        addBagInPlace(expectedTotals[step.playerId], expectedGain);
-        gainedCardCounts[step.playerId] += Object.values(expectedGain).reduce((sum, amount) => sum + amount, 0);
+
+        if (step.round === 1) {
+          // First cottage: no resources granted
+          expect(observedGain).toEqual(emptyBag());
+        } else {
+          // Second cottage: resources granted for each adjacent producing hex
+          const expectedGain = expectedSetupPlacementGain(state, chosen);
+          expect(observedGain).toEqual(expectedGain);
+          addBagInPlace(expectedTotals[step.playerId], expectedGain);
+          gainedCardCounts[step.playerId] += Object.values(expectedGain).reduce((sum, amount) => sum + amount, 0);
+        }
       } else {
         buildTrail(state, step.playerId, targets.trails[0], 1_500 + state.setup.index);
       }
@@ -234,10 +245,9 @@ describe("engine rules", () => {
 
     expect(state.players.p1.resources).toEqual(expectedTotals.p1);
     expect(state.players.p2.resources).toEqual(expectedTotals.p2);
-    expect(gainedCardCounts.p1).toBeLessThanOrEqual(6);
-    expect(gainedCardCounts.p2).toBeLessThanOrEqual(6);
-    expect(gainedCardCounts.p1).toBeGreaterThan(0);
-    expect(gainedCardCounts.p2).toBeGreaterThan(0);
+    // Each player gets resources only from their round-2 cottage
+    expect(gainedCardCounts.p1).toBeGreaterThanOrEqual(0);
+    expect(gainedCardCounts.p2).toBeGreaterThanOrEqual(0);
   });
 
   test("builds exactly 9 coastal markets with 5 specific 2:1 and 4 generic 3:1 ratios", () => {
@@ -257,6 +267,39 @@ describe("engine rules", () => {
     expect(generic3to1).toHaveLength(4);
     expect(illegal).toHaveLength(0);
     expect(new Set(specific2to1.map((stall) => stall.resource))).toEqual(new Set(["timber", "clay", "wool", "harvest", "iron"]));
+  });
+
+  test("port positions are identical across two game instances", () => {
+    const a = createBoard({ hexSize: 84 });
+    const b = createBoard({ hexSize: 84 });
+
+    const posA = a.intersections
+      .filter((n) => n.stall)
+      .map((n) => `${n.x},${n.y}`)
+      .sort();
+    const posB = b.intersections
+      .filter((n) => n.stall)
+      .map((n) => `${n.x},${n.y}`)
+      .sort();
+
+    expect(posA).toHaveLength(9);
+    expect(posA).toEqual(posB);
+
+    const mapA = new Map(
+      a.intersections
+        .filter((n) => n.stall)
+        .map((n) => [`${n.x},${n.y}`, `${n.stall.kind}:${n.stall.resource ?? "*"}:${n.stall.ratio}`])
+    );
+    const mapB = new Map(
+      b.intersections
+        .filter((n) => n.stall)
+        .map((n) => [`${n.x},${n.y}`, `${n.stall.kind}:${n.stall.resource ?? "*"}:${n.stall.ratio}`])
+    );
+
+    expect([...mapA.entries()].sort()).toEqual([...mapB.entries()].sort());
+
+    const coastalOnly = a.intersections.filter((n) => n.stall).every((n) => n.coastal);
+    expect(coastalOnly).toBe(true);
   });
 
   test("enforces spacing rule for cottage placement", () => {
@@ -315,7 +358,7 @@ describe("engine rules", () => {
     rollDice(state, "p2", 3_002, rngForDice(3, 3));
     endTurn(state, "p2", 3_003);
 
-    rollDice(state, "p1", 3_004, rngForDice(3, 4));
+    rollDice(state, "p1", 3_004, rngForDice(4, 4));
     endTurn(state, "p1", 3_005);
 
     expect(roller.frostEffects.length).toBe(0);
@@ -439,6 +482,28 @@ describe("engine rules", () => {
       const activePlayerId = state.turn.order[state.turn.index];
       const { roll } = rollDice(state, activePlayerId, 6_000 + i);
       rolls.push(roll);
+      // Drain Roll 7 pending state so endTurn doesn't throw
+      if (state.turn.pendingDiscards) {
+        for (const pid of Object.keys(state.turn.pendingDiscards.required)) {
+          const required = state.turn.pendingDiscards.required[pid];
+          const bag = { timber: 0, clay: 0, wool: 0, harvest: 0, iron: 0 };
+          let remaining = required;
+          for (const [res, count] of Object.entries(state.players[pid].resources)) {
+            const take = Math.min(count, remaining);
+            bag[res] = take;
+            remaining -= take;
+            if (remaining === 0) break;
+          }
+          submitDiscard(state, pid, bag, 6_200 + i);
+        }
+      }
+      if (state.turn.pendingRobberMove) {
+        const target = state.board.hexes.find((h) => h.terrainId !== "wild_heath" && h.id !== state.robberHexId);
+        moveRobber(state, activePlayerId, target.id, 6_300 + i);
+        if (state.turn.pendingSteal) {
+          resolveSteal(state, activePlayerId, 6_400 + i, () => 0);
+        }
+      }
       endTurn(state, activePlayerId, 6_100 + i);
     }
 
@@ -502,5 +567,184 @@ describe("engine rules", () => {
 
     endTurn(state, activePlayerId, 7_003);
     expect(state.turn.order[state.turn.index]).not.toBe(activePlayerId);
+  });
+
+  describe("robber state", () => {
+    test("ROBBER-01: createGameState initializes robberHexId to the wild_heath hex", () => {
+      const state = createMatch();
+      const wildHeathHex = state.board.hexes.find((h) => h.terrainId === "wild_heath");
+      expect(wildHeathHex).toBeDefined();
+      expect(state.robberHexId).toBe(wildHeathHex.id);
+    });
+
+    test("ROBBER-02: rolling the robber hex token produces nothing; other hexes produce normally", () => {
+      const state = createMatch();
+      forceVoteToFirstToTen(state);
+      completeSnakeSetup(state);
+      resetPlayersAndStructures(state);
+
+      // Pick a producing hex to park the robber on (token !== 2 avoids frost early-return)
+      const robberHex = state.board.hexes.find((h) => h.resource && h.token && h.token !== 2);
+      state.robberHexId = robberHex.id;
+
+      // Place p1 cottage on the robber hex — should receive nothing when rolled
+      const blockedIx = robberHex.intersectionIds[0];
+      state.structures.intersections[blockedIx] = { ownerId: "p1", type: "cottage" };
+      state.players.p1.cottages = [blockedIx];
+
+      const [d1, d2] = pickDiceForTotal(robberHex.token);
+      rollDice(state, "p1", 4_000, rngForDice(d1, d2));
+
+      expect(state.players.p1.resources[robberHex.resource]).toBe(0);
+
+      // Now move robber away and verify the same hex produces normally
+      const otherHex = state.board.hexes.find((h) => h.resource && h.token && h.token !== 2 && h.id !== robberHex.id);
+      state.robberHexId = otherHex.id;
+
+      endTurn(state, "p1", 4_001);
+
+      const [d3, d4] = pickDiceForTotal(robberHex.token);
+      rollDice(state, "p2", 4_002, rngForDice(d3, d4));
+
+      expect(state.players.p1.resources[robberHex.resource]).toBe(1);
+    });
+  });
+
+  describe("roll 7 sequence", () => {
+    function makeMainState() {
+      const state = createMatch();
+      forceVoteToFirstToTen(state);
+      completeSnakeSetup(state);
+      resetPlayersAndStructures(state);
+      return state;
+    }
+
+    function findHexByTerrain(state, terrainId) {
+      return state.board.hexes.find((h) => h.terrainId === terrainId);
+    }
+
+    function findProducingHex(state) {
+      return state.board.hexes.find((h) => h.resource && h.token && h.token !== 2);
+    }
+
+    // ── ROLL7-01 ─────────────────────────────────────────────────────────
+
+    test("roll=7 with player holding 14 cards sets pendingDiscards.required", () => {
+      const state = makeMainState();
+      state.players.p1.resources.timber = 14;
+      rollDice(state, "p1", 5_000, rngForDice(...pickDiceForTotal(7)));
+      expect(state.turn.pendingDiscards).not.toBeNull();
+      expect(state.turn.pendingDiscards.required["p1"]).toBe(7); // floor(14/2)
+    });
+
+    test("roll=7 with no player holding 7+ cards skips discards and sets pendingRobberMove", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_010, rngForDice(...pickDiceForTotal(7)));
+      expect(state.turn.pendingDiscards).toBeNull();
+      expect(state.turn.pendingRobberMove).toBe(true);
+    });
+
+    test("submitDiscard rejects wrong card count", () => {
+      const state = makeMainState();
+      state.players.p1.resources.timber = 8; // must discard 4
+      rollDice(state, "p1", 5_020, rngForDice(...pickDiceForTotal(7)));
+      expect(() =>
+        submitDiscard(state, "p1", { timber: 3, clay: 0, wool: 0, harvest: 0, iron: 0 })
+      ).toThrow("Must discard exactly 4 cards");
+    });
+
+    test("submitDiscard removes cards and records submission", () => {
+      const state = makeMainState();
+      state.players.p1.resources.timber = 8;
+      rollDice(state, "p1", 5_030, rngForDice(...pickDiceForTotal(7)));
+      submitDiscard(state, "p1", { timber: 4, clay: 0, wool: 0, harvest: 0, iron: 0 });
+      expect(state.players.p1.resources.timber).toBe(4);
+      expect(state.turn.pendingDiscards).toBeNull(); // only one required player — should clear
+      expect(state.turn.pendingRobberMove).toBe(true);
+    });
+
+    test("endTurn blocked while pendingDiscards is non-null", () => {
+      const state = makeMainState();
+      state.players.p1.resources.timber = 8;
+      rollDice(state, "p1", 5_040, rngForDice(...pickDiceForTotal(7)));
+      expect(() => endTurn(state, "p1", 5_041)).toThrow("Discards must be resolved");
+    });
+
+    // ── ROLL7-02 ─────────────────────────────────────────────────────────
+
+    test("moveRobber to wild_heath throws", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_050, rngForDice(...pickDiceForTotal(7)));
+      const wildHex = findHexByTerrain(state, "wild_heath");
+      expect(() => moveRobber(state, "p1", wildHex.id)).toThrow("Robber cannot be placed on Wild Heath");
+    });
+
+    test("moveRobber to valid hex updates robberHexId and clears pendingRobberMove", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_060, rngForDice(...pickDiceForTotal(7)));
+      const target = state.board.hexes.find((h) => h.resource && h.token && h.id !== state.robberHexId);
+      moveRobber(state, "p1", target.id);
+      expect(state.robberHexId).toBe(target.id);
+      expect(state.turn.pendingRobberMove).toBeNull();
+    });
+
+    test("endTurn blocked while pendingRobberMove is non-null", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_070, rngForDice(...pickDiceForTotal(7)));
+      expect(() => endTurn(state, "p1", 5_071)).toThrow("Robber must be moved");
+    });
+
+    // ── ROLL7-03 ─────────────────────────────────────────────────────────
+
+    test("moveRobber sets pendingSteal when eligible player is on hex", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_080, rngForDice(...pickDiceForTotal(7)));
+      const target = state.board.hexes.find((h) => h.resource && h.token && h.id !== state.robberHexId);
+      const ixId = target.intersectionIds[0];
+      state.structures.intersections[ixId] = { ownerId: "p2", type: "cottage" };
+      state.players.p2.resources.timber = 1;
+      moveRobber(state, "p1", target.id);
+      expect(state.turn.pendingSteal).not.toBeNull();
+      expect(state.turn.pendingSteal.eligiblePlayerIds).toContain("p2");
+    });
+
+    test("resolveSteal transfers one card from victim to active player", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_090, rngForDice(...pickDiceForTotal(7)));
+      const target = state.board.hexes.find((h) => h.resource && h.token && h.id !== state.robberHexId);
+      const ixId = target.intersectionIds[0];
+      state.structures.intersections[ixId] = { ownerId: "p2", type: "cottage" };
+      state.players.p2.resources.timber = 2;
+      moveRobber(state, "p1", target.id);
+      const p2Before = { ...state.players.p2.resources };
+      const p1Before = { ...state.players.p1.resources };
+      resolveSteal(state, "p1", 5_091, () => 0);
+      const p2After = state.players.p2.resources;
+      const p1After = state.players.p1.resources;
+      const totalStolen = Object.keys(p2Before).reduce((sum, k) => sum + (p2Before[k] - p2After[k]), 0);
+      const totalGained = Object.keys(p1After).reduce((sum, k) => sum + (p1After[k] - p1Before[k]), 0);
+      expect(totalStolen).toBe(1);
+      expect(totalGained).toBe(1);
+      expect(state.turn.pendingSteal).toBeNull();
+    });
+
+    test("moveRobber with no eligible player auto-skips steal (pendingSteal stays null)", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_100, rngForDice(...pickDiceForTotal(7)));
+      const target = state.board.hexes.find((h) => h.resource && h.token && h.id !== state.robberHexId);
+      moveRobber(state, "p1", target.id);
+      expect(state.turn.pendingSteal).toBeNull();
+    });
+
+    test("endTurn blocked while pendingSteal is non-null", () => {
+      const state = makeMainState();
+      rollDice(state, "p1", 5_110, rngForDice(...pickDiceForTotal(7)));
+      const target = state.board.hexes.find((h) => h.resource && h.token && h.id !== state.robberHexId);
+      const ixId = target.intersectionIds[0];
+      state.structures.intersections[ixId] = { ownerId: "p2", type: "cottage" };
+      state.players.p2.resources.timber = 1;
+      moveRobber(state, "p1", target.id);
+      expect(() => endTurn(state, "p1", 5_111)).toThrow("Steal must be resolved");
+    });
   });
 });

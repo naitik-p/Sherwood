@@ -173,7 +173,7 @@ function produceFromRoll(state, roll) {
   const gains = {};
 
   for (const hex of state.board.hexes) {
-    if (!hex.token || hex.token !== roll || !hex.resource) {
+    if (!hex.token || hex.token !== roll || !hex.resource || hex.id === state.robberHexId) {
       continue;
     }
 
@@ -327,7 +327,10 @@ function startMainPhase(state, ts = Date.now()) {
     number: 1,
     rolled: false,
     lastRoll: null,
-    freeTrailBuilds: 0
+    freeTrailBuilds: 0,
+    pendingDiscards: null,
+    pendingRobberMove: null,
+    pendingSteal: null
   };
   pushLog(state, "Setup complete. Main play begins.", ts);
 }
@@ -479,7 +482,8 @@ export function createGameState({ roomId, players, hostPlayerId, config = {}, se
     endedAt: null,
     winner: null,
     pendingHostTieBreak: null,
-    rngStateCalls: 0
+    rngStateCalls: 0,
+    robberHexId: board.hexes.find((h) => h.terrainId === "wild_heath").id
   };
 
   return state;
@@ -587,6 +591,24 @@ export function rollDice(state, playerId, ts = Date.now(), rng = Math.random) {
   player.hasRolledThisTurn = true;
   pushLog(state, `${player.name} rolled ${roll}.`, ts);
 
+  if (roll === 7) {
+    const required = {};
+    for (const pid of state.playerOrder) {
+      const count = bagCount(state.players[pid].resources);
+      if (count >= 7) {
+        required[pid] = Math.floor(count / 2);
+      }
+    }
+    if (Object.keys(required).length > 0) {
+      state.turn.pendingDiscards = { required, submitted: {} };
+      pushLog(state, `${player.name} rolled 7. Players with 7+ cards must discard.`, ts);
+    } else {
+      state.turn.pendingRobberMove = true;
+      pushLog(state, `${player.name} rolled 7. Move the robber.`, ts);
+    }
+    return { roll, gains: {} };
+  }
+
   if (roll === 2) {
     if (player.protectionTurns > 0) {
       pushLog(state, `${player.name} is protected by Hearth Ward. No frost is applied.`, ts);
@@ -669,7 +691,10 @@ export function buildCottage(state, playerId, intersectionId, ts = Date.now()) {
 
   if (state.phase === "setup") {
     state.setup.mustTrailFrom = intersectionId;
-    grantSetupPlacementResources(state, player, intersectionId, ts);
+    const step = currentSetupStep(state);
+    if (step.round === 2) {
+      grantSetupPlacementResources(state, player, intersectionId, ts);
+    }
     advanceSetupPointer(state, ts);
   }
 
@@ -974,6 +999,15 @@ export function endTurn(state, playerId, ts = Date.now()) {
   if (!state.turn.rolled) {
     throw new Error("You must roll before ending your turn");
   }
+  if (state.turn.pendingDiscards !== null) {
+    throw new Error("Discards must be resolved before ending your turn");
+  }
+  if (state.turn.pendingRobberMove !== null) {
+    throw new Error("Robber must be moved before ending your turn");
+  }
+  if (state.turn.pendingSteal !== null) {
+    throw new Error("Steal must be resolved before ending your turn");
+  }
 
   const player = getPlayer(state, playerId);
   tickEndOfTurnEffects(state, player);
@@ -993,6 +1027,9 @@ export function endTurn(state, playerId, ts = Date.now()) {
   state.turn.rolled = false;
   state.turn.lastRoll = null;
   state.turn.freeTrailBuilds = 0;
+  state.turn.pendingDiscards = null;
+  state.turn.pendingRobberMove = null;
+  state.turn.pendingSteal = null;
 
   player.hasRolledThisTurn = false;
   pushLog(state, `${player.name} ended their turn.`, ts);
@@ -1070,6 +1107,14 @@ export function getLegalActions(state, playerId) {
       return [];
     }
     return [step.type === "cottage" ? "buildCottage" : "buildTrail"];
+  }
+
+  if (
+    state.turn?.pendingDiscards &&
+    playerId in state.turn.pendingDiscards.required &&
+    !(playerId in (state.turn.pendingDiscards.submitted ?? {}))
+  ) {
+    return ["submitDiscard"];
   }
 
   const activeId = getActivePlayerId(state);
@@ -1199,4 +1244,86 @@ export function createInitializedGameState(opts) {
   const state = createGameState(opts);
   initializeDeck(state);
   return state;
+}
+
+export function submitDiscard(state, playerId, discardBag, ts = Date.now()) {
+  if (state.phase !== "main") throw new Error("Match is not in main phase");
+  const pending = state.turn?.pendingDiscards;
+  if (!pending) throw new Error("No discard pending");
+  if (!(playerId in pending.required)) throw new Error("You do not owe a discard");
+  if (playerId in pending.submitted) throw new Error("Already submitted");
+
+  const player = getPlayer(state, playerId);
+  const bag = ensureResourceBag(discardBag);
+  if (bagCount(bag) !== pending.required[playerId]) {
+    throw new Error(`Must discard exactly ${pending.required[playerId]} cards`);
+  }
+  if (!bagAtLeast(player.resources, bag)) throw new Error("You do not have those cards");
+
+  bagSubtractInPlace(player.resources, bag);
+  pending.submitted[playerId] = bag;
+  pushLog(state, `${player.name} discarded ${pending.required[playerId]} cards.`, ts);
+
+  const allDone = Object.keys(pending.required).every((id) => id in pending.submitted);
+  if (allDone) {
+    state.turn.pendingDiscards = null;
+    state.turn.pendingRobberMove = true;
+    pushLog(state, "All discards complete. Move the robber.", ts);
+  }
+}
+
+export function moveRobber(state, playerId, hexId, ts = Date.now()) {
+  ensureMainActionTurn(state, playerId);
+  if (!state.turn.pendingRobberMove) throw new Error("No robber move pending");
+
+  const hex = getHex(state.board, hexId);
+  if (hex.terrainId === "wild_heath") throw new Error("Robber cannot be placed on Wild Heath");
+  if (hexId === state.robberHexId) throw new Error("Robber is already on that hex");
+
+  state.robberHexId = hexId;
+  state.turn.pendingRobberMove = null;
+  pushLog(state, `${state.players[playerId].name} moved the robber to ${hex.terrainName}.`, ts);
+
+  const eligible = [];
+  for (const ixId of hex.intersectionIds) {
+    const structure = state.structures.intersections[ixId];
+    if (
+      structure &&
+      structure.ownerId !== playerId &&
+      bagCount(state.players[structure.ownerId].resources) > 0
+    ) {
+      if (!eligible.includes(structure.ownerId)) eligible.push(structure.ownerId);
+    }
+  }
+
+  if (eligible.length > 0) {
+    state.turn.pendingSteal = { eligiblePlayerIds: eligible };
+  } else {
+    state.turn.pendingSteal = null;
+    pushLog(state, "No eligible players to steal from.", ts);
+  }
+}
+
+export function resolveSteal(state, playerId, ts = Date.now(), rng = Math.random) {
+  ensureMainActionTurn(state, playerId);
+  if (state.turn.pendingSteal === null) throw new Error("No steal pending");
+
+  const { eligiblePlayerIds } = state.turn.pendingSteal;
+  if (eligiblePlayerIds.length === 0) {
+    state.turn.pendingSteal = null;
+    return;
+  }
+
+  const victimId = eligiblePlayerIds[randomInt(eligiblePlayerIds.length, rng)];
+  const victim = state.players[victimId];
+  const cards = Object.entries(victim.resources).flatMap(([res, count]) =>
+    Array(count).fill(res)
+  );
+  const stolen = cards[randomInt(cards.length, rng)];
+
+  victim.resources[stolen] -= 1;
+  state.players[playerId].resources[stolen] += 1;
+  state.turn.pendingSteal = null;
+
+  pushLog(state, `${state.players[playerId].name} stole a card from ${victim.name}.`, ts);
 }

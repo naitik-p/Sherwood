@@ -81,6 +81,33 @@ export const COLORS = {
   charter: "#f4e7b0"
 };
 
+// Fixed Catan-standard port layout. Derived once via scripts/derive-stall-coords.mjs
+// at hexSize=84. Do not hand-edit — re-run the script if hexSize changes.
+// Order is clockwise from "top" (min y), matching BAZAAR_STALLS_ORDERED.
+export const FIXED_STALL_COORDS = [
+  [0, -336],          // 0 wool (2:1)
+  [218.238, -294],    // 1 generic (3:1)
+  [363.731, -42],     // 2 timber (2:1)
+  [290.985, 168],     // 3 generic (3:1)
+  [145.492, 336],     // 4 harvest (2:1)
+  [-145.492, 336],    // 5 iron (2:1)
+  [-290.985, 168],    // 6 generic (3:1)
+  [-363.731, -42],    // 7 clay (2:1)
+  [-218.238, -294]    // 8 generic (3:1)
+];
+
+export const BAZAAR_STALLS_ORDERED = [
+  { kind: "specific", resource: "wool", ratio: 2 },
+  { kind: "generic", resource: null, ratio: 3 },
+  { kind: "specific", resource: "timber", ratio: 2 },
+  { kind: "generic", resource: null, ratio: 3 },
+  { kind: "specific", resource: "harvest", ratio: 2 },
+  { kind: "specific", resource: "iron", ratio: 2 },
+  { kind: "generic", resource: null, ratio: 3 },
+  { kind: "specific", resource: "clay", ratio: 2 },
+  { kind: "generic", resource: null, ratio: 3 }
+];
+
 export const DEFAULT_CONFIG = {
   buildCosts: BUILD_COSTS,
   pieceLimits: PIECE_LIMITS,

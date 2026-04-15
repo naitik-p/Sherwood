@@ -1,10 +1,11 @@
 import {
-  BAZAAR_STALLS,
+  BAZAAR_STALLS_ORDERED,
   DEFAULT_NUMBER_TOKENS,
   DEFAULT_TERRAIN_DISTRIBUTION,
+  FIXED_STALL_COORDS,
   TERRAINS
 } from "./constants.js";
-import { assert, randomInt, shuffle } from "./utils.js";
+import { assert, shuffle } from "./utils.js";
 
 const SQRT3 = Math.sqrt(3);
 const HEX_DIRECTIONS = [
@@ -143,24 +144,17 @@ function assignTokensWithGuardrails(hexes, rng) {
   }
 }
 
-function chooseStallIntersections(intersections, rng) {
-  const coastal = intersections.filter((node) => node.hexIds.length < 3);
-  const sorted = [...coastal].sort((a, b) => {
-    const aa = Math.atan2(a.y, a.x);
-    const bb = Math.atan2(b.y, b.x);
-    return aa - bb;
+function chooseStallIntersections(intersections) {
+  const byCoord = new Map(
+    intersections.map((node) => [coordKey(node.x, node.y), node])
+  );
+  return FIXED_STALL_COORDS.map(([x, y]) => {
+    const key = coordKey(x, y);
+    const node = byCoord.get(key);
+    assert(node, `Fixed stall coord ${x},${y} not found in intersection list`);
+    assert(node.coastal, `Fixed stall coord ${x},${y} is not coastal`);
+    return node;
   });
-
-  const selected = [];
-  const step = sorted.length / 9;
-  const offset = randomInt(Math.max(1, Math.floor(step)), rng);
-
-  for (let i = 0; i < 9; i += 1) {
-    const index = Math.floor((offset + i * step) % sorted.length);
-    selected.push(sorted[index]);
-  }
-
-  return selected;
 }
 
 export function createBoard({ rng = Math.random, hexSize = 84 } = {}) {
@@ -271,12 +265,12 @@ export function createBoard({ rng = Math.random, hexSize = 84 } = {}) {
     node.coastal = node.hexIds.length < 3;
   }
 
-  const stallNodes = chooseStallIntersections(intersections, rng);
-  const stallDefs = shuffle(BAZAAR_STALLS, rng);
-  for (let i = 0; i < 9; i += 1) {
+  const stallNodes = chooseStallIntersections(intersections);
+  assert(stallNodes.length === BAZAAR_STALLS_ORDERED.length, "stall node count must match BAZAAR_STALLS_ORDERED length");
+  for (let i = 0; i < stallNodes.length; i += 1) {
     stallNodes[i].stall = {
       id: `stall_${i + 1}`,
-      ...stallDefs[i]
+      ...BAZAAR_STALLS_ORDERED[i]
     };
   }
 
