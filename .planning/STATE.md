@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: Catan Rules Alignment
 status: executing
 last_updated: "2026-04-15"
-last_activity: 2026-04-15 -- Phase 1 complete (BOARD-01 verified)
+last_activity: 2026-04-15 -- Phase 2 complete (BOARD-02 verified)
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 25
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 50
 ---
 
 # STATE — Shorewood Catan Rules Alignment
@@ -20,15 +20,15 @@ progress:
 See: .planning/PROJECT.md
 
 **Core value:** Players get a faithful Catan experience under Shorewood's custom skin — same board, same robber, same setup rules.
-**Current focus:** Phase 2 — Setup Resources
+**Current focus:** Phase 3 — Robber State
 
 ## Current Position
 
-Phase: 2 of 4 (Setup Resources) — Ready to plan
-Status: Phase 1 complete, Phase 2 next
-Last activity: 2026-04-15 — Phase 1 (Port Layout) complete, BOARD-01 verified
+Phase: 3 of 4 (Robber State) — Ready to plan
+Status: Phase 2 complete, Phase 3 next
+Last activity: 2026-04-15 — Phase 2 (Setup Resources) complete, BOARD-02 verified
 
-Progress: [██░░░░░░░░] 25%
+Progress: [████░░░░░░] 50%
 
 ## Completed Phases
 
@@ -41,12 +41,19 @@ Progress: [██░░░░░░░░] 25%
 - New derivation script: `packages/core/scripts/derive-stall-coords.mjs`
 - 13/13 tests pass | build green | determinism probe confirms identical positions across calls
 
+### Phase 2: Setup Resources ✅ (2026-04-15)
+- Requirement: BOARD-02 — satisfied
+- `buildCottage()` in engine.js now checks `step.round === 2` before calling `grantSetupPlacementResources()`
+- Round 1 cottage placements grant no resources
+- Round 2 cottage placements grant one card per adjacent producing hex
+- Test updated: round-conditional assertions replace unconditional grant test
+- 13/13 tests pass | build green | commit 4561b26
+
 ## What Remains
 
 | Phase | Status | Next Action |
 |-------|--------|-------------|
-| 2 — Setup Resources | Not started | Auto-generate context → plan → execute |
-| 3 — Robber State | Not started | After Phase 2 completes |
+| 3 — Robber State | Not started | Auto-generate context → plan → execute |
 | 4 — Roll 7 Sequence | Not started | After Phase 3 completes |
 
 ## Accumulated Context
