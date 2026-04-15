@@ -173,7 +173,7 @@ function produceFromRoll(state, roll) {
   const gains = {};
 
   for (const hex of state.board.hexes) {
-    if (!hex.token || hex.token !== roll || !hex.resource) {
+    if (!hex.token || hex.token !== roll || !hex.resource || hex.id === state.robberHexId) {
       continue;
     }
 
@@ -479,7 +479,8 @@ export function createGameState({ roomId, players, hostPlayerId, config = {}, se
     endedAt: null,
     winner: null,
     pendingHostTieBreak: null,
-    rngStateCalls: 0
+    rngStateCalls: 0,
+    robberHexId: board.hexes.find((h) => h.terrainId === "wild_heath").id
   };
 
   return state;
