@@ -250,3 +250,33 @@ Next actions for DB connectivity outside code:
 - verify Supabase project DB host is correct/current for this project (project may have rotated host/ref)
 - if host is correct, verify runtime DNS/network egress can resolve and reach `*.supabase.co`
 - if environment is IPv4-constrained, switch `DATABASE_URL` to Supabase pooler endpoint (`*.pooler.supabase.com`) and rerun `npm run db:verify`
+
+## 2026-04-17 (dev env bootstrap fix + verification)
+- Investigated report that the game did not appear to connect to Supabase when launched locally from the dev page.
+- Reproduced the mismatch:
+  - before install, the workspace was not initialized (`node_modules` missing), so local checks could not run.
+  - after `npm install`, `npm run db:verify` succeeded against Supabase/Postgres.
+  - `npm run dev` still started the game server in `memory` mode instead of `postgres`.
+  - `curl http://localhost:8080/health` confirmed `"persistence":"memory"` even though root `.env` contained `DATABASE_URL`.
+- Root cause:
+  - `apps/server/src/index.js` relied on `import "dotenv/config"`, which resolves `.env` from the process working directory.
+  - root `npm run dev` launches the server workspace from `apps/server`, so the repo-root `.env` was not loaded.
+- Fix implemented:
+  - added `apps/server/src/load-env.js` to search upward for `.env` files from the current module path.
+  - updated `apps/server/src/index.js` to use the shared loader before reading env vars.
+  - updated `apps/server/scripts/verify_db.mjs` to use the same loader so verification and runtime behavior match.
+- Follow-up fix:
+  - once Postgres mode was active on normal startup, server boot exposed a hidden ordering bug: `restorePersistedRooms()` referenced `rooms` before initialization.
+  - moved `const rooms = new Map()` earlier in `apps/server/src/index.js` so restored rooms can be loaded during startup.
+- Verification after fix:
+  - removed the unused `findProducingHex` helper in `packages/core/test/engine.test.js`; `npm run lint` now passes.
+  - `npm test` passes (27/27).
+  - `npm run build` passes.
+  - `npm run db:verify` passes end-to-end against Supabase/Postgres.
+  - `npm run dev` now logs restored-room startup output and `curl http://localhost:8080/health` returns `"persistence":"postgres"`.
+  - browser smoke script `node output/turn_option_feedback_check.mjs` passes against the live dev stack:
+    - create room
+    - join + admit
+    - ready + start + vote
+    - complete setup
+    - reach main phase and validate action gating/feedback

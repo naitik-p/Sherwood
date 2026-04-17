@@ -26,8 +26,11 @@ Starts:
 Server-only from `apps/server`:
 
 ```bash
-DOTENV_CONFIG_PATH=../../.env node src/index.js
+node src/index.js
 ```
+
+The server searches upward for `.env`, so it will pick up the repo-root `.env` by default.
+`DOTENV_CONFIG_PATH=../../.env node src/index.js` still works as an explicit override.
 
 ## Core Quality Gates
 

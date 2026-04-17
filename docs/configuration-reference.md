@@ -35,15 +35,16 @@ cp .env.example .env
 Template file:
 - `.env.example`
 
-## Dotenv Loading Caveat
+## Dotenv Loading
 
-The server imports `dotenv/config`, which resolves `.env` from process current working directory.
+The server searches upward for `.env` files starting from its entrypoint path.
 
 Implications:
 - Running from repo root (`npm run dev`) picks up root `.env`.
-- Running from `apps/server` does **not** automatically load root `.env`.
+- Running from `apps/server` also picks up root `.env` automatically.
+- A dedicated `apps/server/.env` can still be used for server-only overrides.
 
-Server-only fix:
+Explicit override:
 
 ```bash
 DOTENV_CONFIG_PATH=../../.env node src/index.js

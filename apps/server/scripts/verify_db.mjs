@@ -1,19 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
-import { config as loadDotenv } from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 
 import { RoomStore } from "../src/db.js";
+import { loadWorkspaceEnv } from "../src/load-env.js";
 
-const scriptDir = dirname(fileURLToPath(import.meta.url));
-const repoRootEnv = resolve(scriptDir, "../../../.env");
-loadDotenv();
-if (!process.env.DATABASE_URL && existsSync(repoRootEnv)) {
-  loadDotenv({ path: repoRootEnv });
-}
+loadWorkspaceEnv(import.meta.url);
 
 const ROOM_TTL_HOURS = Number(process.env.ROOM_TTL_HOURS ?? 24);
 const SNAPSHOT_LIMIT = Number(process.env.SNAPSHOT_LIMIT ?? 50);

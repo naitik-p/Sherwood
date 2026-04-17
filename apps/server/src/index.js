@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 import cors from "cors";
 import express from "express";
 import { randomBytes } from "node:crypto";
@@ -27,6 +25,9 @@ import {
   upgradeManor
 } from "@shorewood/core";
 import { RoomStore } from "./db.js";
+import { loadWorkspaceEnv } from "./load-env.js";
+
+loadWorkspaceEnv(import.meta.url);
 
 const PORT = Number(process.env.PORT ?? 8080);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
@@ -54,6 +55,7 @@ const configuredOrigins = CLIENT_ORIGIN.split(",")
 const ALLOW_ALL_ORIGINS = configuredOrigins.includes("*");
 const ALLOWED_ORIGINS = new Set(configuredOrigins);
 const connectionAttemptsByIp = new Map();
+const rooms = new Map();
 const startupState = {
   restoredRooms: 0,
   restoredPlayers: 0,
@@ -114,8 +116,6 @@ try {
   console.error(error);
   process.exit(1);
 }
-
-const rooms = new Map();
 
 function send(ws, type, payload) {
   if (ws.readyState !== WebSocket.OPEN) {

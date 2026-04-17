@@ -623,10 +623,6 @@ describe("engine rules", () => {
       return state.board.hexes.find((h) => h.terrainId === terrainId);
     }
 
-    function findProducingHex(state) {
-      return state.board.hexes.find((h) => h.resource && h.token && h.token !== 2);
-    }
-
     // ── ROLL7-01 ─────────────────────────────────────────────────────────
 
     test("roll=7 with player holding 14 cards sets pendingDiscards.required", () => {

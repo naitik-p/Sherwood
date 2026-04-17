@@ -71,7 +71,9 @@ cp .env.example .env
 
 If you run server from root via `npm run dev`, root `.env` is loaded.
 
-If you run server directly from `apps/server`, set dotenv path explicitly:
+If you run server directly from `apps/server`, it will also discover the repo-root `.env` automatically.
+
+Explicit override still works when needed:
 
 ```bash
 DOTENV_CONFIG_PATH=../../.env node src/index.js

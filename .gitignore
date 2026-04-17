@@ -6,3 +6,8 @@ dist
 coverage
 .playwright-artifacts
 .DS_Store
+
+.venv/
+venv/
+__pycache__/
+*.pyc

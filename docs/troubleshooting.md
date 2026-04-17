@@ -45,11 +45,12 @@ UI behavior:
 ### Symptom A: server starts in memory mode unexpectedly
 
 Likely cause:
-- `DATABASE_URL` not loaded due dotenv working-directory behavior.
+- `.env` is missing, `DATABASE_URL` is absent, or an override is pointing at the wrong env file.
 
 Fix:
 - run from repo root with `npm run dev`, or
-- from `apps/server` run:
+- from `apps/server` run `node src/index.js` (the server now auto-discovers the repo-root `.env`), or
+- if you want to force a specific file:
 
 ```bash
 DOTENV_CONFIG_PATH=../../.env node src/index.js
